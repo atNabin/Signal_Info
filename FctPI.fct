@@ -1,0 +1,30 @@
+'Proportional + Integral Control Script Function
+'This function calculates PI loop control using the velocity form of the equation
+'The Output is a value between 0 and 100
+'Version 1.0
+
+Arg 1 CV 'Control Variable
+Arg 2 SP 'Setpoint
+Arg 3 G 'Gain
+Arg 4 IT 'Integration Time
+Arg 5 ST 'Stroke Time
+Arg 6 DZ 'Dead Zone
+Arg 7 ACT 'PID Action 0 = Reverse, 1 = Direct
+Arg 8 LErr 'Last known error
+Arg 9 LTime 'Delay Time between calculations
+Arg 10 U 'Last PID Value
+Arg 11 FB 'Feedback
+
+Numeric E1 'Current Error
+Numeric Du 'Desired change in output
+Numeric DuMax 'Maximum Change
+
+E1 = SP - CV 'Error Calculation
+DuMax = (Date - LTime) / ST
+Du = ((DZ / 2) < abs(E1)) * minimum(DuMax, maximum(-DuMax, G * ((ACT = 0) + -1 * (ACT = 1)) * (E1 - LErr + (Date - LTime) * E1 / IT / 60))) *100
+U = maximum(0, minimum(100, FB + Du))
+
+LErr = E1 'Save Current error into the last error
+LTime = Date 'Save the current time into the last time
+
+Return U
