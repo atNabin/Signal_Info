@@ -1,5 +1,5 @@
 Numeric Input SaTmp, SaTmpHspt, HtgClgMd, SaFanSts, SaHtgLoadGn, SaHtgLoadIt, SaHtgLoadSt
-Numeric Output AH1AHtgLoad
+Numeric Output HtgLoad
 Function FctPI
 Numeric LastError, ControlInt, DeadZone
 Datetime LastTime 'last time PID was calculated
@@ -20,13 +20,13 @@ PID_On: 'allow PID to modulate
  If HtgClgMd or not SaFanSts then goto PID_Min
 
  If Date >= (LastTime + ControlInt) then
-  AH1AHtgLoad = FctPI(SaTmp, SaTmpHspt, SaHtgLoadGn, SaHtgLoadIt, SaHtgLoadSt, DeadZone, 0, LastError, LastTime, AH1AHtgLoad, AH1AHtgLoad)
+  HtgLoad = FctPI(SaTmp, SaTmpHspt, SaHtgLoadGn, SaHtgLoadIt, SaHtgLoadSt, DeadZone, 0, LastError, LastTime, AH1AHtgLoad, AH1AHtgLoad)
  Endif
 
 PID_Min: 'send PID to minimum position
  If SaFanSts and not HtgClgMd then goto PID_On 'Modulate
 
- AH1AHtgLoad = 0
+ HtgLoad = 0
  LastError = 0
  LastTime = Date
 
