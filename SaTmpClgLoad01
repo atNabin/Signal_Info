@@ -1,0 +1,42 @@
+'Description: Supply Air Temp Cooling Load Program
+'Flow Type: Looping
+'Triggers: none
+'This program calculates a cooling load (0-100) for the unit using a PI loop
+'0 = no cooling required, 100 = max cooling required
+'Version 1.0
+
+Numeric Input AH1ASaTmp, AH1BSaTmp, SaTmpCspt, HtgClgMd, AH1ASaFanSts, AH1BSaFanSts, SaTmpClgLoadGn, SaTmpClgLoadIt, SaTmpClgLoadSt
+Numeric Output ClgLoad
+Function FctPI
+Numeric SaTmp, SaFanSts, LastError, ControlInt, DeadZone
+Datetime LastTime 'last time PID was calculated
+
+Initialize: 'initialize PID parameters
+ LastError = 0
+ LastTime = Date
+
+ '***** Adjust these values to tune the loop: *****
+ ControlInt = 3 'Control Interval - Default = 3
+ DeadZone = 1 'Dead Zone - Default = 1.0
+ '*************************************************
+ SaFanSts = AH1ASaFanSts or AH1BSaFanSts
+ If SaFanSts and HtgClgMd then goto PID_On 'Modulate
+ Goto PID_Min 'Close Valve
+
+PID_On: 'allow PID to modulate
+ If not HtgClgMd or (not AH1ASaFanSts and not AH1BSaFanSts) then goto PID_Min
+ SaTmp = maximum(AH1ASaTmp, AH1BSaTmp)
+ If Date >= (LastTime + ControlInt) then
+  ClgLoad = FctPI(SaTmp, SaTmpCspt, SaTmpClgLoadGn, SaTmpClgLoadIt, SaTmpClgLoadSt, DeadZone, 1, LastError, LastTime, ClgLoad, ClgLoad)
+ Endif
+
+PID_Min: 'send PID to minimum position
+ SaFanSts = AH1ASaFanSts or AH1BSaFanSts
+ If SaFanSts and HtgClgMd then goto PID_On 'Modulate
+
+ ClgLoad = 0
+ LastError = 0
+ LastTime = Date
+
+E:
+ If TS > 30 then goto Initialize
