@@ -1,0 +1,41 @@
+'Description: Supply Air Temp Heating Load Program
+'Flow Type: Looping
+'Triggers: none
+'This program calculates a heating load (0-100) for the unit using a PI loop
+'0 = no heating required, 100 = max heating required
+'Version 1.0
+
+Numeric Input AH1ASaTmp, AH1ASaTmpHspt, HtgClgMd, AH1ASaFanSts, AH1ASaHtgLoadGn, AH1ASaHtgLoadIt, AH1ASaHtgLoadSt
+Numeric Output AH1AHtgLoad
+Function FctPI
+Numeric LastError, ControlInt, DeadZone
+Datetime LastTime 'last time PID was calculated
+
+Initialize: 'initialize PID parameters
+ LastError = 0
+ LastTime = Date
+
+ '***** Adjust these values to tune the loop: *****
+ ControlInt = 6 'Control Interval (seconds) - Default = 60
+ DeadZone = 1 'Dead Zone (degrees) - Default = 1.0
+ '*************************************************
+
+ If AH1ASaFanSts and not HtgClgMd then goto PID_On 'Modulate
+ Goto PID_Min 'Close Valve
+
+PID_On: 'allow PID to modulate
+ If HtgClgMd or not AH1ASaFanSts then goto PID_Min
+
+ If Date >= (LastTime + ControlInt) then
+  AH1AHtgLoad = FctPI(AH1ASaTmp, AH1ASaTmpHspt, AH1ASaHtgLoadGn, AH1ASaHtgLoadIt, AH1ASaHtgLoadSt, DeadZone, 0, LastError, LastTime, AH1AHtgLoad, AH1AHtgLoad)
+ Endif
+
+PID_Min: 'send PID to minimum position
+ If AH1ASaFanSts and not HtgClgMd then goto PID_On 'Modulate
+
+ AH1AHtgLoad = 0
+ LastError = 0
+ LastTime = Date
+
+E:
+ If TS > 30 then goto Initialize
