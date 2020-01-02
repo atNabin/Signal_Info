@@ -1,0 +1,19 @@
+Numeric Input R_T
+Numeric Input EFF_OCC
+Numeric Output R_OVR
+'*******************************
+'* Programmer: Grant Hornback
+'* Date: 8/24/07
+'* Description: Sensor-Short Zone Override Program
+'*******************************
+Numeric LastState
+Wai_:
+  Turn Off R_OVR
+  If (R_T > 320 and LastState = Off and EFF_OCC = 2) then Goto Override
+  If R_T < 320 then LastState = Off
+Override:
+  Turn On R_OVR
+  LastState = On
+  If TS > 30 then Goto Wai_
+E:
+  Goto Wai_
