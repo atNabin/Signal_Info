@@ -1,0 +1,47 @@
+Numeric Input SAF_FBK
+Numeric Input SAF_CMD
+Numeric Output SAF_RI
+Numeric Output SAF_SPD
+Numeric Output SAF_FBK_HZ
+Numeric Output SAF_F_OFF
+Numeric Output SAF_F_ON
+Numeric   FailStamp
+'****************************************
+'Author:  Nabin Maharjan
+'Date:  
+'Description:  Supply Fan Speed Feedback Program 
+'Flow Type:  Looping
+'Triggers:  N/A
+'**************************************** 
+Datetime LastTime 'last time PID was calculated
+
+Initialize: 'initialize PID parameters
+  LastTime = Date
+  FailStamp = Date
+  Goto FanFbk
+
+FanFbk:
+  SAF_FBK_HZ = SAF_FBK * 60
+  If SAF_FBK > 0.05 then Turn On SAF_RI Else Turn Off SAF_RI
+
+  If SAF_CMD and not SAF_RI then
+    If Date > FailStamp + 180 then
+      Turn On SAF_F_OFF
+    Endif
+  Else
+    FailStamp = Date
+    Turn Off SAF_F_OFF
+  Endif
+  
+    If not SAF_CMD and SAF_RI then
+    If Date > FailStamp + 180 then
+    Turn On SAF_F_ON
+    Endif
+  Else
+    FailStamp = Date
+    Turn Off SAF_F_ON
+  Endif
+  
+E:
+  LastTime = Date
+  If TS > 10 then Goto Initialize
