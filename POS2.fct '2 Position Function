@@ -1,0 +1,35 @@
+'Function:  2-Position
+'Maintained by: JM
+'Last Updated: 9/1/09
+'Modified by:
+'Modification:
+' 
+Arg 1 MV
+Arg 2 SP
+Arg 3 DF
+Arg 4 ENA
+Arg 5 ACT 'Action (0=Reverse, 1=Direct)
+Arg 6 LV 'Last Value
+Arg 7 Failsafe 'Failsafe value if sensor should fail
+Arg 8 FailLimit 'Failure threshold (optional; default=320 for thermistor failure)
+
+Numeric InitResult 'initial result
+Numeric Result 'Final result
+
+InitResult = LV 'Set the result to the last known value of the output
+
+If ENA is On then 'Check the enabling condition
+  If MV >= SP + DF / 2 then InitResult = ACT 'if above setpoint, set output to action
+  If MV <= SP - DF / 2 then InitResult = not ACT 'if below setpoint, set output to opposite of action
+Else
+  InitResult = 0 'Set result to off state
+Endif
+
+If passed(8) then
+  If abs(MV) > FailLimit then InitResult = Failsafe 'Sensor failsafe condition
+Else
+  If abs(MV) > 320 then InitResult = Failsafe 'Sensor failsafe condition
+Endif
+If InitResult is On then Turn On Result Else Turn Off Result 'Returns an off/on state instead of 0/1
+
+Return Result
