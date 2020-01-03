@@ -1,0 +1,27 @@
+'****************************************
+'Author:  Dan Killilea
+'Date:  1/3/2020
+'Description:  Supply Fan Speed Base off Htg/Clg Loads Program 
+'Flow Type:  Looping
+'Triggers:  N/A
+'**************************************** 
+Numeric Input HtgLoad, ClgLoad, HtgClgMd, SaFanSts, SaFanSpdMin, SaFanSpdMax
+Numeric Output SaFanSpd
+
+Function Curve2
+
+Init:
+Goto HtgMdLine
+
+HtgMdLine:
+If HtgClgMd then goto ClgMdLine
+SaFanSpd = Curve2(HtgLoad, 0, SaFanSpdMin, 100, SaFanSpdMax)
+
+ClgMdLine:
+If not HtgClgMd then goto HtgMdLine
+SaFanSpd = Curve2(ClgLoad, 0, SaFanSpdMin, 100, SaFanSpdMax)
+
+
+
+E:
+If TS>10 then goto Init
