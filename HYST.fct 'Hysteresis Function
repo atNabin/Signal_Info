@@ -1,0 +1,23 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Hysteresis Function
+'****************************************
+
+Arg 1 MV 'Measured Variable
+Arg 2 OnValue 'Value to turn on output
+Arg 3 OffValue 'Value to turn off output
+Arg 4 Ena 'Enable
+Arg 5 LV 'Last Value
+
+If Ena is On then
+  If OnValue > OffValue then
+    If MV >= OnValue then Return On
+    If MV <= OffValue then Return Off
+  Else
+    If MV <= OnValue then Return On
+    If MV >= OffValue then Return Off
+  Endif
+Else
+  Return Off
+Endif
