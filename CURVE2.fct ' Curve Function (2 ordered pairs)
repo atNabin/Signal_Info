@@ -1,0 +1,19 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Curve Function (2 ordered pairs)
+'****************************************
+
+Arg 1 InX
+Arg 2 X1
+Arg 3 Y1
+Arg 4 X2
+Arg 5 Y2
+
+Numeric OutY, i
+
+If InX <= X1 then OutY = Y1
+If InX >= X2 then OutY = Y2
+If InX > X1 and InX < X2 then OutY = Y1 + (InX - X1) * (Y1 - Y2) / (X1 - X2)
+
+Return OutY
