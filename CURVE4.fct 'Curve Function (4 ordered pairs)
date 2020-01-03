@@ -1,0 +1,25 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Curve Function (4 ordered pairs)
+'****************************************
+
+Arg 1 InX
+Arg 2 X1
+Arg 3 Y1
+Arg 4 X2
+Arg 5 Y2
+Arg 6 X3
+Arg 7 Y3
+Arg 8 X4
+Arg 9 Y4
+
+Numeric OutY, i, Args, X[7], Y[7], Pairs, a, b
+
+If InX <= X1 then OutY = Y1
+If InX >= X4 then OutY = Y4
+If InX > X1 and InX <= X2 then OutY = Y1 + (InX - X1) * (Y1 - Y2) / (X1 - X2)
+If InX > X2 and InX <= X3 then OutY = Y2 + (InX - X2) * (Y2 - Y3) / (X2 - X3)
+If InX > X3 and InX < X4 then OutY = Y3 + (InX - X3) * (Y3 - Y4) / (X3 - X4)
+
+Return OutY
