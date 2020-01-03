@@ -1,0 +1,15 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Ramp Limiting Function
+'****************************************
+
+Arg 1 SPD 'Speed
+Arg 2 PI 'PID Status
+Arg 3 RMP 'Ramp Limit
+Arg 4 Fraction 'Ramp Fraction
+
+Fraction = minimum(Scan, 1) * RMP
+SPD = minimum(maximum(PI, SPD - Fraction), SPD + Fraction)
+
+Return SPD
