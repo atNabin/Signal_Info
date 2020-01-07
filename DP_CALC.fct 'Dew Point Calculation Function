@@ -1,0 +1,24 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Dewpoint Calculation
+'****************************************
+
+Arg 1 Temp
+Arg 2 Humidity
+
+Numeric Dewpoint, TempC
+
+If abs(Temp) < 320 then 'failure condition check
+
+  TempC = (Temp - 32) / 1.8 'convert Temp from Fahrenheit to Celcius
+  Dewpoint = ((TempC - (14.55 + 0.114 * TempC) * (1 - Humidity) - ((2.5 + 0.007 * TempC) * (1 - Humidity)) ^ 3 - (15.9 + 0.117 * TempC) * (1 - Humidity) ^ 14)) 'calculate dewpoint
+  Dewpoint = (1.8 * Dewpoint) + 32 'convert Dewpoint to Fahrenheit
+
+Else
+
+  Dewpoint = 66.6 'failsafe value
+
+Endif
+
+Return Dewpoint
