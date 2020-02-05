@@ -1,0 +1,55 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  OA Damper Control Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Numeric LastError 'Stores last error for later calculation
+Numeric PIDMin, PIDMax 'max and min PID limits
+Numeric Status, OldStatus 'status flags for PID mode
+Numeric OAD_OAT_EN, OAD_RA_EN, OAD_ENTH_EN
+Datetime LastTime 'last time PID was calculated
+
+Initialize: 'initialize PID parameters
+  PIDMin = 0
+  PIDMax = 1
+  LastError = 0
+  LastTime = Date
+  Goto PID_Off
+
+PID_Off: 'turn off PID (maintin last position)
+  If SAF_RI and EFF_OCC <> 2 then OAD_CO2_PM = 1 Else OAD_CO2_PM = 3
+  OA_CO2_DF = NV_OA_CO2 - SA_CO2
+  OAD_CO2_PID = OAD_CO2_PID
+  LastError = 0
+  LastTime = Date
+  Basedon OAD_CO2_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+PID_On: 'allow PID to modulate
+  If SAF_RI and EFF_OCC <> 2 then OAD_CO2_PM = 1 Else OAD_CO2_PM = 3
+  OA_CO2_DF = NV_OA_CO2 - SA_CO2
+  If Date >= LastTime + OAD_CO2_CI then
+    OAD_CO2_PID = PI.fct(OA_CO2_DF, OA_CO2_DFSP, OAD_CO2_PB, OAD_CO2_IT, OAD_CO2_ST, OAD_CO2_CI, OAD_CO2_DZ, PIDMax, PIDMin, 1, LastError, LastTime, OAD_CO2_PID, OAD_CO2_PID)
+  Endif
+  Basedon OAD_CO2_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+PID_Max: 'send PID to maximum position
+  If SAF_RI and EFF_OCC <> 2 then OAD_CO2_PM = 1 Else OAD_CO2_PM = 3
+  OA_CO2_DF = NV_OA_CO2 - SA_CO2
+  OAD_CO2_PID = PIDMax
+  LastError = 0
+  LastTime = Date
+  Basedon OAD_CO2_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+PID_Min: 'send PID to minimum position
+  If SAF_RI and EFF_OCC <> 2 then OAD_CO2_PM = 1 Else OAD_CO2_PM = 3
+  OA_CO2_DF = NV_OA_CO2 - SA_CO2
+  OAD_CO2_PID = PIDMin
+  LastError = 0
+  LastTime = Date
+  Basedon OAD_CO2_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+E:
+  If TS > 10 then goto Initialize
