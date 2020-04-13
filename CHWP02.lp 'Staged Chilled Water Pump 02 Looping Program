@@ -1,0 +1,51 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  CHW Pump Command Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Datetime FailStamp, OffTime
+
+PumpOff:
+  CHWP#1_MLO.str = "Normal"
+  If CHWP#1_CMD then CHWP#1_CMD.str = "Start" Else CHWP#1_CMD.str = "Stop"
+  If CHWR_LO then
+    Turn Off CHWP#1_CMD
+    Goto PumpOff
+  Endif
+  If (CHWP#1_STG = 1 and CHWP_LD_CL) or (CHWP#1_STG = 2 and CHWP_LG_CL) then
+    FailStamp = Date
+    Goto PumpOn
+  Else
+    Turn Off CHWP#1_CMD
+  Endif
+  If CHWP#1_MLO then Goto PumpLockout
+
+PumpOn:
+  If CHWP#1_MLO then Goto PumpLockout
+  If CHWR_LO then Goto PumpOff
+  If ((CHWP#1_STG = 1 and CHWP_LD_CL) or (CHWP#1_STG = 2 and CHWP_LG_CL)) then
+    Turn On CHWP#1_CMD
+    OffTime = Date
+  Else
+    If Date > OffTime + CHWP#1_OF then Goto PumpOff
+  Endif
+  If CHWP#1_CMD and not CHWP#1_RI then
+    If Date > FailStamp + 180 then Turn On CHWP#1_F
+  Else
+    FailStamp = Date
+    Turn Off CHWP#1_F
+  Endif
+  CHWP#1_MLO.str = "Normal"
+  If CHWP#1_CMD then CHWP#1_CMD.str = "Start" Else CHWP#1_CMD.str = "Stop"
+
+PumpLockout:
+  Turn Off CHWP#1_CMD
+  CHWP#1_MLO.str = "Lockout"
+  If CHWP#1_CMD then CHWP#1_CMD.str = "Start" Else CHWP#1_CMD.str = "Stop"
+  If not CHWP#1_MLO then Goto PumpOff
+
+E:
+  If TS > 10 then Goto PumpOn
