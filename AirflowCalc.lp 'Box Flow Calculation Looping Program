@@ -1,0 +1,20 @@
+Numeric AirflowRaw, VelPressCal
+
+FlowCalculation:
+'Filter the airflow value using the airflow coefficient (0 - 100%)
+  If VelocityPressure < LoBoxVelPress then
+    VelPressCal = 0
+  Else
+    VelPressCal = (VelocityPressure) * GainPress
+  Endif
+  If UnitStatus <> 15 then
+    AirflowRaw = FlowCalc.fct(DuctArea, PickupFactor, maximum(0, VelPressCal))
+  Else
+    AirflowRaw = FlowCalc.fct(DuctArea, PickupFactor, VelocityPressure)
+  Endif
+  Airflow = Filt.fct(AirflowCoeff, AirflowRaw, Airflow)
+
+E:
+  Goto FlowCalculation
+
+ 
