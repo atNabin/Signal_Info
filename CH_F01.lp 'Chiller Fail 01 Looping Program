@@ -1,0 +1,50 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Chiller Fail Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Numeric CH_CHWS_F, CH_RLA_F, CH#1_CHWS_FDF, CH#1_RLA_FDF
+Datetime CH_CHWS_Stamp, FailOnStamp, FailOffStamp
+
+Initialize:
+  CH#1_CHWS_FDF = 2 'degrees (default = 2)
+  CH#1_RLA_FDF = 2 'amps (default = 2)
+  Goto ChillerOff
+
+ChillerOff:
+  Turn Off CH_CHWS_F
+  Turn Off CH_RLA_F
+  FailOnStamp = Date
+  FailOffStamp = Date
+  If CH#1_EN then Goto FailMonitor
+
+FailMonitor:
+  If not CH#1_EN then Goto ChillerOff
+  If not CH_CHWS_F then CH_CHWS_Stamp = Date
+  CH_CHWS_F = POS2.fct(CHWS_T, CH#1_CHWS_FSP, CH#1_CHWS_FDF, CH#1_EN, 1, CH_CHWS_F, 0)
+  CH_RLA_F = POS2.fct(CH#1_RLA, CH#1_RLA_FSP, CH#1_RLA_FDF, CH#1_EN, 0, CH_RLA_F, 0)
+  If Date > CH_CHWS_Stamp + CH#1_CHWS_FON and CH_RLA_F and not CH#1_RI and TS > CH#1_F_ON then
+    If Date > FailOnStamp + CH#1_F_ON then
+      Turn On CH#1_F
+      Goto FailOn
+    Endif
+  Else
+    FailOnStamp = Date
+  Endif
+
+FailOn:
+  If not CH#1_EN then Goto ChillerOff
+  If not CH_CHWS_F then CH_CHWS_Stamp = Date
+  CH_CHWS_F = POS2.fct(CHWS_T, CH#1_CHWS_FSP, CH#1_CHWS_FDF, CH#1_EN, 1, CH_CHWS_F, 0)
+  CH_RLA_F = POS2.fct(CH#1_RLA, CH#1_RLA_FSP, CH#1_RLA_FDF, CH#1_EN, 0, CH_RLA_F, 0)
+  If not CH_CHWS_F and not CH_RLA_F and CH#1_RI then
+    If Date > FailOffStamp + CH#1_F_OF then Turn Off CH#1_F
+  Else
+    FailOffStamp = Date
+  Endif
+
+E:
+  If TS > 10 then Goto Initialize
