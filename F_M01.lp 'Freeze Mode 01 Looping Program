@@ -1,0 +1,23 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Freeze Mode
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Initialize:
+  Goto FreezeModeOff
+
+FreezeModeOff:
+  F_M = POS2.fct(NV_OA_T, F_SP, F_DF, 1, 0, F_M, 0)
+  If F_M then Goto FreezeModeOn
+
+FreezeModeOn:
+  F_M = POS2.fct(NV_OA_T, F_SP, F_DF, 1, 0, F_M, 0)
+  If not F_M then Goto FreezeModeOff
+
+E:
+  Goto FreezeModeOn
+
+
