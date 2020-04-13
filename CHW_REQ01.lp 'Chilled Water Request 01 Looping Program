@@ -1,0 +1,13 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  CHW Request Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+CHW_Request:
+  CHW_REQ = HYST.fct(CHWV_POS, 0.99, 0.01, SAF_RI and CHWV_PM = 1, CHW_REQ)
+
+E:
+  If TS > 10 then goto CHW_Request
