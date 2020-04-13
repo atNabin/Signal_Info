@@ -1,0 +1,14 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Filter
+'****************************************
+
+Arg 1 MV 'Measured Variable to be filtered
+Arg 2 TC 'Time Constant
+
+Numeric FV 'Filtered Value
+
+FV = (FV * (1 - Scan * 1 / TC)) + (MV * Scan * 1 / TC)
+
+Return FV
