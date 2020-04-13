@@ -1,0 +1,26 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Cooling Tower Fan Lead/Lag Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Numeric CT_Fans, CTF_LG_EN
+Datetime LagOn
+
+LeadLagCall:
+  CT_Fans = LDLG.fct(CTF_LD_CL, CTF_LG_CL, CT#1F#1_RI, CT#1F#2_RI, CT#1F#1_F, CT#1F#2_F, CT#1F#1_STG, CT#1F#2_STG, CT#1F#1_RT, CT#1F#2_RT, CT#1F#1_MLO, CT#1F#2_MLO, CTF_LDLG_EN, CTF_LDLG_MAN)
+  CTF_CWS_LDSP = CWS_SP + CTF_CWS_LDOFS
+  CTF_LD_CL = POS2.fct(CWS_T, CTF_CWS_LDSP, CTF_CWS_DF, C_M and CWP#1_RI, 1, CTF_LD_CL, 0)
+  CTF_CWS_LGSP = CWS_SP + CTF_CWS_LGOFS
+  CTF_LG_EN = POS2.fct(CWS_T, CTF_CWS_LGSP, CTF_CWS_DF, CTF_LD_CL, 1, CTF_LG_EN, 0)
+  If not CTF_LG_EN then
+    LagOn = Date
+    Turn Off CTF_LG_CL
+  Else
+    If Date > LagOn + CTF_LG_ON then Turn On CTF_LG_CL
+  Endif
+
+E:
+  If TS > 10 then goto LeadLagCall
