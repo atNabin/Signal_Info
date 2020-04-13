@@ -1,0 +1,39 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Boiler Lead/Lag Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Numeric Boilers, LagEnable, LagHWS
+Datetime LagOnStamp, LagOffStamp
+
+LeadCallCheck:
+  If H_M then Turn On B_LD_CL Else Turn Off B_LD_CL
+  Turn Off B_LG_CL
+  B_LG_HWS_SP = HWS_SP - B_LG_HWS_OFS
+  Boilers = LDLG.fct(B_LD_CL, B_LG_CL, B#1_EN, B#2_EN, 0, 0, B#1_STG, B#2_STG, B#1_RT, B#2_RT, B#1_MLO, B#2_MLO, B_LDLG_EN, B_LDLG_MAN)
+  If B#1_STG <= Boilers then Turn On B#1_CL Else Turn Off B#1_CL
+  If B#2_STG <= Boilers then Turn On B#2_CL Else Turn Off B#2_CL
+  If B_LD_CL then Goto LagCallCheck
+
+LagCallCheck:
+  If H_M then Turn On B_LD_CL Else Turn Off B_LD_CL
+  LagEnable = B_LD_CL and (B#1_EN or B#2_EN)
+  B_LG_HWS_SP = HWS_SP - B_LG_HWS_OFS
+  LagHWS = POS2.fct(HWS_T, B_LG_HWS_SP, B_LG_HWS_DF, LagEnable, 0, LagHWS, 0)
+  Boilers = LDLG.fct(B_LD_CL, B_LG_CL, B#1_EN, B#2_EN, 0, 0, B#1_STG, B#2_STG, B#1_RT, B#2_RT, B#1_MLO, B#2_MLO, B_LDLG_EN, B_LDLG_MAN)
+  If B#1_STG <= Boilers then Turn On B#1_CL Else Turn Off B#1_CL
+  If B#2_STG <= Boilers then Turn On B#2_CL Else Turn Off B#2_CL
+  If not B_LD_CL then Goto LeadCallCheck
+  If LagHWS then
+    If Date > LagOnStamp + B_LG_CL_ON then Turn On B_LG_CL
+    LagOffStamp = Date
+  Else
+    LagOnStamp = Date
+    If Date > LagOffStamp + B_LG_CL_OF then Turn Off B_LG_CL
+  Endif
+
+E:
+  If TS > 10 then goto LagCallCheck
