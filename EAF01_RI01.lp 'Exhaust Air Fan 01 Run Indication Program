@@ -1,0 +1,36 @@
+'****************************************
+'Author:  
+'Date:    
+'Description:  Fan Run Indication Program
+'Flow Type:  Looping
+'Triggers:  N/A 
+'****************************************
+
+Numeric threshold
+
+Initialize:
+  threshold = 0.05
+  Goto FanStatusOFF
+
+FanStatusOFF:
+  If EAF#1_AMPS <= (threshold * EAF#1_FLA) then
+    If TS > 3 then
+      Turn Off EAF#1_RI
+    Endif
+  Else
+    Goto FanStatusON
+  Endif
+
+FanStatusON:
+  If EAF#1_AMPS >= (threshold * EAF#1_FLA) then
+    If TS > 3 then
+      Turn On EAF#1_RI
+    Endif
+  Else
+    Goto FanStatusOFF
+  Endif
+
+E:
+  If TS > 10 then Goto Initialize
+
+
