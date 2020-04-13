@@ -1,0 +1,13 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Dehumidification Mode Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Dehumidification:
+  DEH_M = POS2.fct(R_H, DEH_H_SP, DEH_H_DF, 1, 1, DEH_M, 0)
+
+E:
+  If TS > 10 then goto Dehumidification
