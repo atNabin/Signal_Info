@@ -1,0 +1,44 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Heating/Cooling Mode
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+HeatMode:
+  If not HC_M_OP then
+    If HC_M_RTOP = 1 then
+      If R_HT_OCC > R_SPC then Goto CoolMode
+    Else
+      If HC_M_RTOP = 2 then
+        If R_LT_OCC > R_SPC then Goto CoolMode
+      Else
+        If R_AT > R_SPC then Goto CoolMode
+      Endif
+    Endif
+  Else
+    If RA_T > RA_SPC then Goto CoolMode
+  Endif
+  HC_M.str = "Heat"
+  Turn Off HC_M
+
+CoolMode:
+  If not HC_M_OP then
+    If HC_M_RTOP = 1 then
+      If R_HT_OCC < R_SPH then Goto HeatMode
+    Else
+      If HC_M_RTOP = 2 then
+        If R_LT_OCC < R_SPH then Goto HeatMode
+      Else
+        If R_AT < R_SPH then Goto HeatMode
+      Endif
+    Endif
+  Else
+    If RA_T < RA_SPH then Goto HeatMode
+  Endif
+  HC_M.str = "Cool"
+  Turn On HC_M
+
+E:
+  If TS > 10 then Goto HeatMode
