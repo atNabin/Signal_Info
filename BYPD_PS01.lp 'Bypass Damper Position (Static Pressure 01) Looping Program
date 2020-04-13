@@ -1,0 +1,95 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  SA Fan Speed Control Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Numeric LastError 'Stores last error for later calculation
+Numeric PIDMin, PIDMax 'max and min PID limits
+Numeric RampFraction
+Numeric LockoutCall
+Datetime LockoutTime
+Datetime LastTime 'last time PID was calculated
+
+Initialize: 'initialize PID parameters
+  PIDMin = 0
+  PIDMax = 1
+  LastError = 0
+  LastTime = Date
+  Goto PID_Off
+
+PID_Off: 'turn off PID (maintin last position)
+  LockoutCall = POS2.fct(BYPD_POS, BYPD_SAF_LOSP, BYPD_SAF_LODF, SAF_RI, 1, LockoutCall, 0)
+  If LockoutCall is On then
+    Turn On BYPD_SAF_LO
+    LockoutTime = Date
+  Else
+    If Date > LockoutTime + BYPD_SAF_CYCT then Turn Off BYPD_SAF_LO
+  Endif
+  If BYPD_SAF_LO then BYPD_SAF_LO.str = "Lockout" Else BYPD_SAF_LO.str = "Normal"
+  If SAF_RI then BYPD_PM = 1 Else BYPD_PM = 4
+  SA_PS_FILT = FILT.fct(SA_PS, SA_PS_TC)
+  BYPD_POS_PS = CURVE2.fct(SA_PS, BYPD_POS_PS[1], BYPD_POS_PS[2], BYPD_POS_PS[3], BYPD_POS_PS[4])
+  BYPD_POS = maximum(0.5, BYPD_POS_PS)
+  LastError = 0
+  LastTime = Date
+  Basedon BYPD_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+PID_On: 'allow PID to modulate
+  LockoutCall = POS2.fct(BYPD_POS, BYPD_SAF_LOSP, BYPD_SAF_LODF, SAF_RI, 1, LockoutCall, 0)
+  If LockoutCall is On then
+    Turn On BYPD_SAF_LO
+    LockoutTime = Date
+  Else
+    If Date > LockoutTime + BYPD_SAF_CYCT then Turn Off BYPD_SAF_LO
+  Endif
+  If BYPD_SAF_LO then BYPD_SAF_LO.str = "Lockout" Else BYPD_SAF_LO.str = "Normal"
+  If SAF_RI then BYPD_PM = 1 Else BYPD_PM = 4
+  SA_PS_FILT = FILT.fct(SA_PS, SA_PS_TC)
+  If Date >= LastTime + BYPD_CI then
+    BYPD_PID = PI.fct(SA_PS_FILT, SA_PS_SP, BYPD_PB, BYPD_IT, BYPD_ST, BYPD_CI, BYPD_DZ, PIDMax, PIDMin, 1, LastError, LastTime, BYPD_PID, BYPD_PID)
+  Endif
+  BYPD_POS_PS = CURVE2.fct(SA_PS, BYPD_POS_PS[1], BYPD_POS_PS[2], BYPD_POS_PS[3], BYPD_POS_PS[4])
+  BYPD_POS = maximum(BYPD_PID, BYPD_POS_PS)
+  Basedon BYPD_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+PID_Max: 'send PID to maximum position
+  LockoutCall = POS2.fct(BYPD_POS, BYPD_SAF_LOSP, BYPD_SAF_LODF, SAF_RI, 1, LockoutCall, 0)
+  If LockoutCall is On then
+    Turn On BYPD_SAF_LO
+    LockoutTime = Date
+  Else
+    If Date > LockoutTime + BYPD_SAF_CYCT then Turn Off BYPD_SAF_LO
+  Endif
+  If BYPD_SAF_LO then BYPD_SAF_LO.str = "Lockout" Else BYPD_SAF_LO.str = "Normal"
+  If SAF_RI then BYPD_PM = 1 Else BYPD_PM = 4
+  BYPD_PID = PIDMax
+  SA_PS_FILT = FILT.fct(SA_PS, SA_PS_TC)
+  BYPD_POS_PS = CURVE2.fct(SA_PS, BYPD_POS_PS[1], BYPD_POS_PS[2], BYPD_POS_PS[3], BYPD_POS_PS[4])
+  BYPD_POS = maximum(BYPD_PID, BYPD_POS_PS)
+  LastError = 0
+  LastTime = Date
+  Basedon BYPD_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+PID_Min: 'send PID to minimum position
+  LockoutCall = POS2.fct(BYPD_POS, BYPD_SAF_LOSP, BYPD_SAF_LODF, SAF_RI, 1, LockoutCall, 0)
+  If LockoutCall is On then
+    Turn On BYPD_SAF_LO
+    LockoutTime = Date
+  Else
+    If Date > LockoutTime + BYPD_SAF_CYCT then Turn Off BYPD_SAF_LO
+  Endif
+  If BYPD_SAF_LO then BYPD_SAF_LO.str = "Lockout" Else BYPD_SAF_LO.str = "Normal"
+  If SAF_RI then BYPD_PM = 1 Else BYPD_PM = 4
+  BYPD_PID = 0
+  SA_PS_FILT = FILT.fct(SA_PS, SA_PS_TC)
+  BYPD_POS_PS = CURVE2.fct(SA_PS, BYPD_POS_PS[1], BYPD_POS_PS[2], BYPD_POS_PS[3], BYPD_POS_PS[4])
+  BYPD_POS = maximum(BYPD_PID, BYPD_POS_PS)
+  LastError = 0
+  LastTime = Date
+  Basedon BYPD_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+E:
+  If TS > 10 then goto Initialize
