@@ -1,0 +1,26 @@
+'**************************************** 
+'Description: Automatic Flash Backup Program 
+'Flow Type: Looping 
+'Triggers: none 
+'**************************************** 
+Numeric LastDOM
+
+WAIT:
+  If Dayofmonth <> LastDOM and TS > 3600 then 'New day and not just sent to controller
+    LastDOM = Dayofmonth
+    Goto AUTOFLASH
+  Endif
+
+AUTOFLASH:
+  If ACCStatusFlash is ACCFlashEmpty then 'Check flash status 
+    Set ACCStatusBackup to ACCBackupNow 'Set backup to begin 
+  Endif
+  If ACCStatusBackup is ACCBackupNeeded then 'Check if backup is needed 
+    If ACCStatusFlash <> ACCFlashFailure then 'Check to see if flash has failed 
+      Set ACCStatusBackup to ACCBackupNow 'Set backup to begin 
+    Endif
+  Endif
+  Goto WAIT
+
+E:
+  If TS > 60 then Goto WAIT
