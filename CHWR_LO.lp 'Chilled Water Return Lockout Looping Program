@@ -1,0 +1,28 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  CHW Return Lockout Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+CHWR_Normal:
+  CHWR_LO = POS2.fct(CHWR_T, CHWR_LOSP, 10, 1, 1, CHWR_LO, 0)
+  If CHWR_LO then
+    CHWR_LO.str = "Lockout"
+    Goto CHWR_Lockout
+  Else
+    CHWR_LO.str = "Normal"
+  Endif
+
+CHWR_Lockout:
+  CHWR_LO = POS2.fct(CHWR_T, CHWR_LOSP, 10, 1, 1, CHWR_LO, 0)
+  If not CHWR_LO then
+    CHWR_LO.str = "Normal"
+    Goto CHWR_Normal
+  Else
+    CHWR_LO.str = "Lockout"
+  Endif
+
+E:
+  If TS > 10 then Goto CHWR_Normal
