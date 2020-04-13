@@ -1,0 +1,46 @@
+Datetime OvrEndTime, StandbyEndTime
+Numeric LastOccSense, LastOcc
+
+Initialize:
+  StandbyEndTime = Date + StandbyDelay * 60
+  Basedon OccpncyStatus Goto Occupied, Unoccupied, Bypass, Standby
+
+Occupied:
+  If OccupancySensor is Off and OccpncySensCnfg is On then
+    If LastOcc = 2 or LastOccSense is On then
+      StandbyEndTime = Date + StandbyDelay * 60
+    Endif
+    If Date > StandbyEndTime then OccpncyStatus = 4
+  Endif
+  OccpncyStatus Description = "Occupied"
+  LastOcc = 1
+  LastOccSense = OccupancySensor
+  Basedon OccpncyStatus Goto Occupied, Unoccupied, Bypass, Standby
+
+Unoccupied:
+  If LCDDisplay[8] = 3 then 'LCDDisplay = 3 (4-button display), LCDDisplay = 1 (6 button display)
+    LCDDisplay[8] = 0 'reset the latch for the LCDDisplay button
+    OvrEndTime = Date + OverrideTime * 3600
+    OccpncyStatus = 3
+  Else
+    OccpncyStatus Description = "Unoccupied"
+  Endif
+  LastOcc = 2
+  Basedon OccpncyStatus Goto Occupied, Unoccupied, Bypass, Standby
+
+Bypass:
+  OccpncyStatus Description = "Bypass"
+  If Date > OvrEndTime then OccpncyStatus = 2
+  LastOcc = 3
+  Basedon OccpncyStatus Goto Occupied, Unoccupied, Bypass, Standby
+
+Standby:
+  If OccupancySensor is On or OccpncySensCnfg is Off then
+    OccpncyStatus = 1
+  Else
+    OccpncyStatus Description = "Standby"
+  Endif
+  LastOcc = 4
+  Basedon OccpncyStatus Goto Occupied, Unoccupied, Bypass, Standby
+
+ 
