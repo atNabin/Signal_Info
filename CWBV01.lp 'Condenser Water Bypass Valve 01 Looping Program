@@ -1,0 +1,75 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  CW Bypass Valve Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Numeric LastError 'Stores last error for later calculation
+Numeric PIDMin, PIDMax 'max and min PID limits
+Datetime LastTime 'last time PID was calculated
+
+Initialize: 'initialize PID parameters
+  PIDMin = 0
+  PIDMax = 1
+  LastError = 0
+  LastTime = Date
+  Basedon CWBV_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+PID_Off: 'turn off PID (maintain last position)
+  CWBV_CWS_SP = CWS_SP - CWBV_CWS_OFS
+  If (CWP#1_RI and C_M) or CH#1_RI then
+    CWBV_PM = 1
+  Else
+    If F_M and CWP#1_RI then CWBV_PM = 2 Else CWBV_PM = 4
+  Endif
+  CWBV_PID = 0.5
+  CWBV_POS = CWBV_PID
+  LastError = 0
+  LastTime = Date
+  Basedon CWBV_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+PID_On: 'allow PID to modulate
+  CWBV_CWS_SP = CWS_SP - CWBV_CWS_OFS
+  If (CWP#1_RI and C_M) or CH#1_RI then
+    CWBV_PM = 1
+  Else
+    If F_M and CWP#1_RI then CWBV_PM = 2 Else CWBV_PM = 4
+  Endif
+  If Date >= LastTime + CWBV_CI then
+    CWBV_PID = PI.fct(CWS_T, CWBV_CWS_SP, CWBV_PB, CWBV_IT, CWBV_ST, CWBV_CI, CWBV_DZ, PIDMax, PIDMin, 0, LastError, LastTime, CWBV_PID, CWBV_POS)
+  Endif
+  CWBV_POS = CWBV_PID
+  Basedon CWBV_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+PID_Max: 'send PID to maximum position
+  CWBV_CWS_SP = CWS_SP - CWBV_CWS_OFS
+  If (CWP#1_RI and C_M) or CH#1_RI then
+    CWBV_PM = 1
+  Else
+    If F_M and CWP#1_RI then CWBV_PM = 2 Else CWBV_PM = 4
+  Endif
+  CWBV_PID = PIDMax
+  CWBV_POS = CWBV_PID
+  LastError = 0
+  LastTime = Date
+  Basedon CWBV_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+PID_Min: 'send PID to minimum position
+  CWBV_CWS_SP = CWS_SP - CWBV_CWS_OFS
+  If (CWP#1_RI and C_M) or CH#1_RI then
+    CWBV_PM = 1
+  Else
+    If F_M and CWP#1_RI then CWBV_PM = 2 Else CWBV_PM = 4
+  Endif
+  CWBV_PID = PIDMin
+  CWBV_POS = CWBV_PID
+  LastError = 0
+  LastTime = Date
+  Basedon CWBV_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+E:
+  LastError = 0
+  LastTime = Date
+  If TS > 10 then goto Initialize
