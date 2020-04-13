@@ -1,0 +1,51 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  2-Stage Electric Heat Staging
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Numeric EH2_CL
+Datetime OffTime1, OnTime1, OffTime2, OnTime2
+
+HeatOff:
+  H_CL = POS2.fct(R#1_T, R_SPH, EH_DF, not HC_M and (EFF_OCC <> 2 or SUSB_M = 2), 0, H_CL, 0)
+  If H_CL and SAF_RI then
+    If Date > OffTime1 + EH_CYCT and Date > OnTime1 + EH#1_ON then Goto HeatStage1
+  Else
+    OnTime1 = Date
+    Turn Off EH#1_CMD
+    Turn Off EH#2_CMD
+  Endif
+
+HeatStage1:
+  H_CL = POS2.fct(R#1_T, R_SPH, EH_DF, not HC_M and (EFF_OCC <> 2 or SUSB_M = 2), 0, H_CL, 0)
+  EH#2_R_SPH = R_SPH - EH#2_R_OFS
+  EH2_CL = POS2.fct(R#1_T, EH#2_R_SPH, EH_DF, EH#1_CMD, 0, EH2_CL, 0)
+  If EH2_CL and SAF_RI then
+    If Date > OffTime2 + EH_CYCT and Date > OnTime2 + EH#2_ON then Goto HeatStage2
+  Else
+    OnTime2 = Date
+    Turn Off EH#2_CMD
+  Endif
+  If H_CL and SAF_RI then
+    Turn On EH#1_CMD
+  Else
+    OffTime1 = Date
+    Goto HeatOff
+  Endif
+
+HeatStage2:
+  H_CL = POS2.fct(R#1_T, R_SPH, EH_DF, not HC_M and (EFF_OCC <> 2 or SUSB_M = 2), 0, H_CL, 0)
+  EH#2_R_SPH = R_SPH - EH2_R_OFS
+  EH2_CL = POS2.fct(R#1_T, EH#2_R_SPH, EH_DF, H_CL, 0, EH2_CL, 0)
+  If EH2_CL and SAF_RI then
+    Turn On EH#2_CMD
+  Else
+    OffTime2 = Date
+    Goto HeatStage1
+  Endif
+
+E:
+  If TS > 10 then Goto HeatOff
