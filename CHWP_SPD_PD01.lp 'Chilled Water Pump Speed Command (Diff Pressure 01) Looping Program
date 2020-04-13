@@ -1,0 +1,76 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  CHW Pump Speed Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Numeric LastError 'Stores last error for later calculation
+Numeric PIDMin, PIDMax 'max and min PID limits
+Numeric PumpSpeed, RampFraction, Pumps
+Datetime LastTime 'last time PID was calculated
+
+Initialize: 'initialize PID parameters
+  PIDMin = 0
+  PIDMax = 1
+  LastError = 0
+  LastTime = Date
+  Basedon CHWP_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+PID_Off: 'turn off PID (maintain last position)
+  CHWP#1_FBK_HZ = CHWP#1_FBK * 60
+  CHWP#2_FBK_HZ = CHWP#2_FBK * 60
+  CHW_PD_FILT = FILT.fct(CHW_PD, CHW_PD_TC)
+  Pumps = CHWP#1_RI + CHWP#2_RI
+  If Pumps > 0 then CHWP_PM = 1 Else CHWP_PM = 3
+  CHWP#1_SPD = RMP.fct(CHWP#1_SPD, maximum(CHWP_PID, CHWP#1_SPD_L) * CHWP#1_RI, CHWP_RMP, RampFraction)
+  CHWP#2_SPD = RMP.fct(CHWP#2_SPD, maximum(CHWP_PID, CHWP#2_SPD_L) * CHWP#2_RI, CHWP_RMP, RampFraction)
+  LastError = 0
+  LastTime = Date
+  Basedon CHWP_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+PID_On: 'allow PID to modulate
+  CHWP#1_FBK_HZ = CHWP#1_FBK * 60
+  CHWP#2_FBK_HZ = CHWP#2_FBK * 60
+  CHW_PD_FILT = FILT.fct(CHW_PD, CHW_PD_TC)
+  Pumps = CHWP#1_RI + CHWP#2_RI
+  If Pumps > 0 then CHWP_PM = 1 Else CHWP_PM = 3
+  PIDMin = minimum(CHWP#1_SPD_L * CHWP#1_RI, CHWP#2_SPD_L * CHWP#2_RI)
+  If Date >= LastTime + CHWP_CI then
+    CHWP_PID = PI.fct(CHW_PD_FILT, CHW_PD_SP, CHWP_PB, CHWP_IT, CHWP_ST, CHWP_CI, CHWP_DZ, PIDMax, PIDMin, 0, LastError, LastTime, CHWP_PID, CHWP_PID)
+  Endif
+  CHWP#1_SPD = RMP.fct(CHWP#1_SPD, maximum(CHWP_PID, CHWP#1_SPD_L) * CHWP#1_RI, CHWP_RMP, RampFraction)
+  CHWP#2_SPD = RMP.fct(CHWP#2_SPD, maximum(CHWP_PID, CHWP#2_SPD_L) * CHWP#2_RI, CHWP_RMP, RampFraction)
+  Basedon CHWP_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+PID_Max: 'send PID to maximum position
+  CHWP#1_FBK_HZ = CHWP#1_FBK * 60
+  CHWP#2_FBK_HZ = CHWP#2_FBK * 60
+  CHW_PD_FILT = FILT.fct(CHW_PD, CHW_PD_TC)
+  Pumps = CHWP#1_RI + CHWP#2_RI
+  If Pumps > 0 then CHWP_PM = 1 Else CHWP_PM = 3
+  CHWP_PID = PIDMax
+  CHWP#1_SPD = RMP.fct(CHWP#1_SPD, maximum(CHWP_PID, CHWP#1_SPD_L) * CHWP#1_RI, CHWP_RMP, RampFraction)
+  CHWP#2_SPD = RMP.fct(CHWP#2_SPD, maximum(CHWP_PID, CHWP#2_SPD_L) * CHWP#2_RI, CHWP_RMP, RampFraction)
+  LastError = 0
+  LastTime = Date
+  Basedon CHWP_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+PID_Min: 'send PID to minimum position
+  CHWP#1_FBK_HZ = CHWP#1_FBK * 60
+  CHWP#2_FBK_HZ = CHWP#2_FBK * 60
+  CHW_PD_FILT = FILT.fct(CHW_PD, CHW_PD_TC)
+  Pumps = CHWP#1_RI + CHWP#2_RI
+  If Pumps > 0 then CHWP_PM = 1 Else CHWP_PM = 3
+  CHWP_PID = PIDMin
+  CHWP#1_SPD = RMP.fct(CHWP#1_SPD, maximum(CHWP_PID, CHWP#1_SPD_L) * CHWP#1_RI, CHWP_RMP, RampFraction)
+  CHWP#2_SPD = RMP.fct(CHWP#2_SPD, maximum(CHWP_PID, CHWP#2_SPD_L) * CHWP#2_RI, CHWP_RMP, RampFraction)
+  LastError = 0
+  LastTime = Date
+  Basedon CHWP_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+E:
+  LastError = 0
+  LastTime = Date
+  If TS > 10 then goto Initialize
