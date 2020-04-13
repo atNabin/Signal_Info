@@ -1,0 +1,60 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Cooling Tower Fan Speed Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Numeric LastError 'Stores last error for later calculation
+Numeric PIDMin, PIDMax 'max and min PID limits
+Numeric RampFraction
+Datetime LastTime 'last time PID was calculated
+
+Initialize: 'initialize PID parameters
+  PIDMin = CT#1F#1_SPD_L
+  PIDMax = 1
+  LastError = 0
+  LastTime = Date
+  Basedon CT#1F_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+PID_Off: 'turn off PID (maintain last position)
+  CT#1F#1_FBK_HZ = CT#1F#1_FBK * 60
+  If CT#1F#1_RI then CT#1F_PM = 1 Else CT#1F_PM = 3
+  CT#1F#1_SPD = RMP.fct(CT#1F#1_SPD, CT#1F_PID, CT#1F_RMP, RampFraction)
+  LastError = 0
+  LastTime = Date
+  Basedon CT#1F_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+PID_On: 'allow PID to modulate
+  CT#1F#1_FBK_HZ = CT#1F#1_FBK * 60
+  If CT#1F#1_RI then CT#1F_PM = 1 Else CT#F_PM = 3
+  If Date >= LastTime + CT#1F_CI then
+    CT#1F_PID = PI.fct(CWS_T, CWS_SP, CT#1F_PB, CT#1F_IT, CT#1F_ST, CT#1F_CI, CT#1F_DZ, PIDMax, PIDMin, 1, LastError, LastTime, CT#1F_PID, CT#1F#1_SPD)
+  Endif
+  CT#1F#1_SPD = RMP.fct(CT#1F#1_SPD, CT#1F_PID, CT#1F_RMP, RampFraction)
+  Basedon CT#1F_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+PID_Max: 'send PID to maximum position
+  CT#1F#1_FBK_HZ = CT#1F#1_FBK * 60
+  If CT#1F#1_RI then CT#1F_PM = 1 Else CT#1F_PM = 3
+  CT#1F_PID = PIDMax
+  CT#1F#1_SPD = RMP.fct(CT#1F#1_SPD, CT#1F_PID, CT#1F_RMP, RampFraction)
+  LastError = 0
+  LastTime = Date
+  Basedon CT#1F_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+PID_Min: 'send PID to minimum position
+  CT#1F#1_FBK_HZ = CT#1F#1_FBK * 60
+  If CT#1F#1_RI then CT#1F_PM = 1 Else CT#1F_PM = 3
+  CT#1F_PID = 0
+  CT#1F#1_SPD = RMP.fct(CT#1F#1_SPD, CT#1F_PID, CT#1F_RMP, RampFraction)
+  LastError = 0
+  LastTime = Date
+  Basedon CT#1F_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+E:
+  LastError = 0
+  LastTime = Date
+  If TS > 10 then goto Initialize
+
