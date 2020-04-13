@@ -1,0 +1,52 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Staged Boiler Enable Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Numeric HWS_LO
+Datetime HWS_LO_OnStamp, HWS_LO_OffStamp, Boiler_Stamp
+
+BoilerOn:
+  If B#1_MLO then
+    Turn Off HWS_LO
+    Goto BoilerLockout
+  Endif
+
+  HWS_LO = POS2.fct(B#1S_T, B#1_HWS_LOSP, B#1_HWS_LODF, 1, 1, B#1_HWS_LO, 0)
+  If not HWS_LO then
+    HWS_LO_OnStamp = Date
+    If Date > HWS_LO_OffStamp + B#1_HWS_LOOF then Turn Off B#1_HWS_LO
+  Else
+    HWS_LO_OffStamp = Date
+    If Date > HWS_LO_OnStamp + B#1_HWS_LOON then Turn On B#1_HWS_LO
+  Endif
+
+  If B#1_CL and B#1ISV_CMD and (HWP#1_RI or HWP#2_RI) then
+    If not B#1_HWS_LO and B#1_CS[1] is Off then Turn On B#1_EN Else Turn Off B#1_EN
+  Else
+    Goto BoilerOff
+  Endif
+  B#1_MLO.str = "Normal"
+
+BoilerOff:
+  If B#1_CL and B#1ISV_CMD and (HWP#1_RI or HWP#2_RI) then
+    If Date > Boiler_Stamp + B#1_ON then Goto BoilerOn
+  Else
+    Boiler_Stamp = Date
+    Turn Off B#1_EN
+  Endif
+  B#1_MLO.str = "Normal"
+
+BoilerLockout:
+  Turn Off B#1_EN
+  B#1_MLO.str = "Lockout"
+  If not B#1_MLO then Goto BoilerOff
+
+E:
+  If TS > 10 then Goto BoilerOff
+
+
+
