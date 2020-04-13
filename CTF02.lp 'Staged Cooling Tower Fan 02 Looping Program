@@ -1,0 +1,53 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Cooling Tower Fan Command Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Numeric CTF_EN
+Datetime FailStamp, CycleTime
+
+Initialize:
+  FailStamp = Date
+  CycleTime = Date
+  Goto FanOn
+
+FanOn:
+  If CT#1F#1_MLO then Goto Lockout
+  If (CT#1F#1_STG = 1 and CTF_LD_CL) or (CT#1F#1_STG = 2 and CTF_LG_CL) then
+    Turn On CT#1F#1_CMD
+  Else
+    If Date > CycleTime + CTF_CYCT then Goto FanOff
+  Endif
+  If CT#1F#1_CMD and not CT#1F#1_RI then
+    If Date > FailStamp + 180 then Turn On CT#1F#1_F
+  Else
+    FailStamp = Date
+    Turn Off CT#1F#1_F
+  Endif
+  If CT#1F#1_CMD then CT#1F#1_CMD.str = "Start" Else CT#1F#1_CMD.str = "Stop"
+  CT#1F#1_MLO.str = "Normal"
+
+FanOff:
+  If (CT#1F#1_STG = 1 and CTF_LD_CL) or (CT#1F#1_STG = 2 and CTF_LG_CL) then
+    CycleTime = Date
+    FailStamp = Date
+    Goto FanOn
+  Else
+    Turn Off CT#1F#1_CMD
+  Endif
+  If CT#1F#1_CMD then CT#1F#1_CMD.str = "Start" Else CT#1F#1_CMD.str = "Stop"
+  CT#1F#1_MLO.str = "Normal"
+  If CT#1F#1_MLO then Goto Lockout
+
+Lockout:
+  Turn Off CT#1F#1_CMD
+  CT#1F#1_MLO.str = "Lockout"
+  If CT#1F#1_CMD then CT#1F#1_CMD.str = "Start" Else CT#1F#1_CMD.str = "Stop"
+  If not CT#1F#1_MLO then Goto FanOff
+
+E:
+  If TS > 10 then goto Initialize
+
