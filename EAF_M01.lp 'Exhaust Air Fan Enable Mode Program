@@ -1,0 +1,35 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Exhaust Air Fan Enable Mode Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Numeric DisableDelay, FanEnable, Differential
+Datetime DisableStamp
+
+Initialize:
+  Differential = 2 'degrees-F
+  DisableDelay = 1800 'seconds - 30 minutes
+  Goto FanOff
+
+FanOn:
+  FanEnable = POS2.fct(NV_OA_T, EAF_M_SP, Differential, 1, 1, FanEnable, 0)
+  If FanEnable then
+    Turn EAF_M On
+  Else
+    DisableStamp = Date
+    Goto FanOff
+  Endif
+
+FanOff:
+  FanEnable = POS2.fct(NV_OA_T, EAF_M_SP, Differential, 1, 1, FanEnable, 0)
+  If FanEnable then
+    Goto FanOn
+  Else
+    If Date > DisableStamp + DisableDelay then Turn EAF_M Off
+  Endif
+
+E:
+  If TS > 10 then Goto FanOff
