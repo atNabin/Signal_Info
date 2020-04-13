@@ -1,0 +1,51 @@
+Numeric DelayOnFlag, DelayOffFlag
+
+NoFan:
+  FanTypeVAV Description = "No Fan"
+  Turn Off DelayOnFlag
+  Turn Off DelayOffFlag
+  Turn Off FanCmd
+  Basedon FanTypeVAV Goto NoFan, ParallelFan, SeriesFan
+
+ParallelFan:
+  FanTypeVAV Description = "Parallel Fan"
+  If UnitStatus = 2 then
+    If FanEnaWarmup is On then
+      If TerminalLoad <= -2 / (ElecHeatStgNum * (HeatEnaWarmup is On) + 2) and DelayOnFlag is Off then Goto DelayOn
+      If TerminalLoad >= -1 / (ElecHeatStgNum * (HeatEnaWarmup is On) + 2) and DelayOffFlag is Off then Goto DelayOff
+    Endif
+  Else
+    If UnitStatus <> 6 then
+      If TerminalLoad <= -1 / (ElecHeatStgNum + 1) and DelayOnFlag is Off then Goto DelayOn
+      If TerminalLoad >= 0 and DelayOffFlag is Off then Goto DelayOff
+    Endif
+  Endif
+  Basedon FanTypeVAV Goto NoFan, ParallelFan, SeriesFan
+
+SeriesFan:
+  FanTypeVAV Description = "Series Fan"
+  If UnitStatus <> 6 then
+    If DelayOnFlag is Off then Goto DelayOn
+  Else
+    If DelayOffFlag is Off then Goto DelayOff
+  Endif
+  Basedon FanTypeVAV Goto NoFan, ParallelFan, SeriesFan
+
+DelayOn:
+  If TS < FanDelayStart then Goto DelayOn
+  Turn Off DelayOffFlag
+  Turn On DelayOnFlag
+  Turn On FanCmd
+  Basedon FanTypeVAV Goto NoFan, ParallelFan, SeriesFan
+
+DelayOff:
+  If TS < FanDelayStop then Goto DelayOff
+  Turn Off DelayOnFlag
+  Turn On DelayOffFlag
+  Turn Off FanCmd
+  Basedon FanTypeVAV Goto NoFan, ParallelFan, SeriesFan
+
+E:
+  Goto NoFan
+
+ 
