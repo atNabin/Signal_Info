@@ -1,0 +1,24 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  CHW Pump Call Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Numeric CHW_Pumps
+
+LeadLagCall:
+  CHW_Pumps = LDLG.fct(CHWP_LD_CL, 0, CHWP#1_RI, CHWP#2_RI, CHWP#1_F, CHWP#2_F, CHWP#1_STG, CHWP#2_STG, CHWP#1_RT, CHWP#2_RT, CHWP#1_MLO, CHWP#2_MLO, CHWP_LDLG_EN, CHWP_LDLG_MAN)
+
+'Enable Conditions
+  If C_M or F_M then
+    Turn On CHWP_LD_CL
+  Else
+    Turn Off CHWP_LD_CL
+  Endif
+
+  If CHWP#1_RI or CHWP#2_RI then turn on ANY_CHWP_RI else turn off ANY_CHWP_RI
+
+E:
+  If TS > 10 then Goto LeadLagCall
