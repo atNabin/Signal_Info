@@ -1,0 +1,29 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Boiler Isolation Valve Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Datetime OffTime
+
+OpenIsoValve:
+  If B#1_CL or (F_M and not H_M) or (not B#2ISV_CMD and (HWP#1_RI or HWP#2_RI)) then
+    Turn On B#1ISV_CMD
+    OffTime = Date
+  Else
+    If Date > OffTime + B#1ISV_OF then Goto CloseIsoValve
+  Endif
+  If B#1ISV_CMD then B#1ISV_CMD.str = "Open" Else B#1ISV_CMD.str = "Closed"
+
+CloseIsoValve:
+  If B#1_CL or (F_M and not H_M) or (not B#2ISV_CMD and (HWP#1_RI or HWP#2_RI)) then
+    Goto OpenIsoValve
+  Else
+    Turn Off B#1ISV_CMD
+  Endif
+  If B#1ISV_CMD then B#1ISV_CMD.str = "Open" Else B#1ISV_CMD.str = "Closed"
+
+E:
+  If TS > 10 then Goto OpenIsoValve
