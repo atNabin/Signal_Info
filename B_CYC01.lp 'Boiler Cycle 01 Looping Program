@@ -1,0 +1,26 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Boiler Cycle Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Cycle:
+  If not B#1_CS then
+    B#1_CS[1] = POS2.fct(HWS_T, HWS_SP, B#1_CYC_DF, not B#1_CS, 1, B#1_CS[1], 0)
+    B#1_CS.str = "Cycle"
+  Else
+    Goto EnableOnly
+  Endif
+
+EnableOnly:
+  If B#1_CS then
+    B#1_CS[1] = Off
+    B#1_CS.str = "Enable"
+  Else
+    Goto Cycle
+  Endif
+
+E:
+  If TS > 10 then Goto Cycle
