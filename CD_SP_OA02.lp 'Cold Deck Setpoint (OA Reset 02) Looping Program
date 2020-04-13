@@ -1,0 +1,22 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Cold Deck Setpoint Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+ColdDeckSetpoint:
+  If CD_SP_OP then
+    CD_SP_OA = CURVE4.fct(NV_OA_T, CD_SP_OA[1], CD_SP_OA[2], CD_SP_OA[3], CD_SP_OA[4], CD_SP_OA[5], CD_SP_OA[6], CD_SP_OA[7], CD_SP_OA[8])
+    CD_OFS_ERRC = CURVE4.fct(ZN_SPC_HERR, CD_OFS_ERRC[1], CD_OFS_ERRC[2], CD_OFS_ERRC[3], CD_OFS_ERRC[4], CD_OFS_ERRC[5], CD_OFS_ERRC[6], CD_OFS_ERRC[7], CD_OFS_ERRC[8])
+    CD_SP_RST = CD_SP_OA + CD_OFS_ERRC
+    CD_SP = maximum(CD_SP_RST, CD_SP_L)
+    CD_SP_OP.str = "Auto"
+  Else
+    CD_SP = maximum(CD_SP_MAN, CD_SP_L)
+    CD_SP_OP.str = "Manual"
+  Endif
+
+E:
+  If TS > 10 then Goto ColdDeckSetpoint
