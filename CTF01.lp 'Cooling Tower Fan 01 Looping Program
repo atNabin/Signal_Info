@@ -1,0 +1,45 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Cooling Tower Fan Command Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Numeric CTF_EN
+Datetime FailStamp, CycleTime
+
+Initialize:
+  FailStamp = Date
+  CycleTime = Date
+  Goto FanOff
+
+FanOn:
+  CTF_EN = POS2.fct(CWS_T, CWS_SP, CTF_CWS_DF, C_M and CWP#_RI, 1, CTF_EN, 0)
+  If CTF_EN then
+    Turn On CT#F#_CMD
+  Else
+    If Date > CycleTime + CTF_CYCT then Goto FanOff
+  Endif
+  If CT#F#_CMD and not CT#F#_RI then
+    If Date > FailStamp + 180 then Turn On CT#F#_F
+  Else
+    FailStamp = Date
+    Turn Off CT#F#_F
+  Endif
+  If CT#F#_CMD then CT#F#_CMD.str = "Start" Else CT#F#_CMD.str = "Stop"
+
+FanOff:
+  CTF_EN = POS2.fct(CWS_T, CWS_SP, CTF_CWS_DF, C_M and CWP#_RI, 1, CTF_EN, 0)
+  If CTF_EN then
+    CycleTime = Date
+    FailStamp = Date
+    Goto FanOn
+  Else
+    Turn Off CT#F#_CMD
+  Endif
+  If CT#F#_CMD then CT#F#_CMD.str = "Start" Else CT#F#_CMD.str = "Stop"
+
+E:
+  If TS > 10 then Goto FanOff
+
