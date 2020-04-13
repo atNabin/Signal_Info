@@ -1,0 +1,20 @@
+'****************************************
+'Author:   
+'Date:   
+'Description:  CW Freeze Lockout Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+LockoutNormal:
+  CWP_F_LO.str = "Normal"
+  CWP_F_LO = POS2.fct(CWS_T, CWP_F_LOSP, CWP_F_LODF, F_M, 1, CWP_F_LO, 0)
+  If CWP_F_LO then Goto LockoutOn
+
+LockoutOn:
+  CWP_F_LO.str = "Lockout"
+  CWP_F_LO = POS2.fct(CWS_T, CWP_F_LOSP, CWP_F_LODF, F_M, 1, CWP_F_LO, 0)
+  If CWP_F_LO then Goto LockoutNormal
+
+E:
+  If TS > 10 then goto LockoutNormal
