@@ -1,0 +1,36 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Boiler Enable Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Numeric HWS_LO
+Datetime HWS_LO_OnStamp, HWS_LO_OffStamp, Blr_OnTime
+
+BoilerOn:
+  HWS_LO = POS2.fct(B#1S_T, B#1_HWS_LOSP, B#1_HWS_LODF, 1, 1, B#1_HWS_LO, 0)
+  If not HWS_LO then
+    HWS_LO_OnStamp = Date
+    If Date > HWS_LO_OffStamp + B#1_HWS_LOOF then Turn Off B#1_HWS_LO
+  Else
+    HWS_LO_OffStamp = Date
+    If Date > HWS_LO_OnStamp + B#1_HWS_LOON then Turn On B#1_HWS_LO
+  Endif
+  If H_M and HWP#1_RI then
+    If not B#1_HWS_LO and not B#1_CS[1] then Turn On B#1_EN Else Turn Off B#1_EN
+  Else
+    Goto BoilerOff
+  Endif
+
+BoilerOff:
+  If H_M and HWP#1_RI then
+    If Date > Blr_OnTime + B#1_ON then Goto BoilerOn
+  Else
+    Blr_OnTime = Date
+    Turn Off B#1_EN
+  Endif
+
+E:
+  If TS > 10 then Goto BoilerOff
