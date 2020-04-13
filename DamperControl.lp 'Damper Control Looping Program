@@ -1,0 +1,87 @@
+'Notes:  Damper pulse time accurate to 0.1 sec (must be > 1 sec)
+
+Numeric OldError, DamperError 'Calculated errors
+Numeric StrokePulse 'length of pulse
+Numeric DamperPID 'PID Calculation
+Numeric Rotation 'rotation direction of the damper
+Numeric StrokeFraction 'Fractional strokes
+Numeric MinPosition 'Minimum damper position (pressure dependent only
+Datetime LastEval 'Last time damper position was evaluated
+
+DamperReset: 'Stroke the Damper open 100% in the event of a power loss
+  DamperSignal = DriveTimeDmpr * (DirectionDmpr = 1) - DriveTimeDmpr * (DirectionDmpr = 0)
+  DamperPosition = 1
+  If TS > DriveTimeDmpr then
+    If PressDependent is Off then Goto PressIndCntrl Else Goto PressDepCntrl
+  Endif
+
+PressDepCntrl: 'Pressure Dependent Control
+  MinPosition = ((UnitStatus = 1) * (MinFlowHeat) + (UnitStatus = 2) * (MinFlowWarmup) + (UnitStatus = 3) * (MinFlow)) / MaxFlow
+  If UnitStatus <> 6 then
+    If DirectionDmpr is On then Rotation = 1 Else Rotation = -1
+    If Date > LastEval + DamperInterval + Scan then
+      Turn Off DamperSignal
+      DamperError = Rotation * ((TerminalLoad - DamperPosition) * (UnitStatus = 3) + (abs(TerminalLoad) - DamperPosition) * (UnitStatus = 1 or UnitStatus = 2)) * DriveTimeDmpr
+      StrokePulse = round((minimum(maximum(-DamperInterval, DamperError), DamperInterval)) * 10) / 10 + StrokeFraction
+      LastEval = Date
+      If DamperPosition + Rotation * StrokePulse / DriveTimeDmpr < MinPosition then StrokePulse = Rotation * (DamperPosition - MinPosition) * DriveTimeDmpr
+      If abs(StrokePulse) < 1 then
+        StrokeFraction = StrokePulse
+        StrokePulse = 0
+      Else
+        StrokeFraction = 0
+      Endif
+      DamperSignal = StrokePulse
+      DamperPosition = DamperPosition + Rotation * DamperSignal / DriveTimeDmpr
+    Endif
+  Else
+    Goto DamperClose
+  Endif
+  If PressDependent is Off then Goto PressIndCntrl Else Goto PressDepCntrl
+
+PressIndCntrl: 'Pressure Indpendent Control
+  If UnitStatus <> 6 then
+    If DirectionDmpr is On then Rotation = 1 Else Rotation = -1
+    If Date > LastEval + DamperInterval + Scan then
+      Turn Off DamperSignal
+      DamperPID = PI.fct(Airflow, AirflowStpt, DamperPBand, DamperITime, DriveTimeDmpr, DamperInterval, 50, 0, OldError, LastEval, DamperPID, DamperPID)
+      If DamperPID = 1 then
+        DamperSignal = DamperInterval * Rotation
+        StrokeFraction = 0
+      Else
+        If DamperPID = 0 then
+          DamperSignal = -DamperInterval * Rotation
+          StrokeFraction = 0
+        Else
+          DamperError = Rotation * (DamperPID - DamperPosition) * DriveTimeDmpr
+          StrokePulse = round((minimum(maximum(-DamperInterval, DamperError), DamperInterval)) * 10) / 10 + StrokeFraction
+          If abs(StrokePulse) < 1 then
+            StrokeFraction = StrokePulse
+            StrokePulse = 0
+          Else
+            StrokeFraction = 0
+          Endif
+          DamperSignal = StrokePulse
+        Endif
+      Endif
+      DamperPosition = minimum(maximum(0, DamperPosition + Rotation * DamperSignal / DriveTimeDmpr), 1)
+    Endif
+  Else
+    Goto DamperClose
+  Endif
+  If PressDependent is Off then Goto PressIndCntrl Else Goto PressDepCntrl
+
+DamperClose: 'Stroke damper 100% closed when mode is off
+  DamperSignal = DriveTimeDmpr * (DirectionDmpr = 0) - DriveTimeDmpr * (DirectionDmpr = 1)
+  DamperPosition = 0
+  If TS >= DriveTimeDmpr then Goto DamperOff
+
+DamperOff: 'Damper off state
+  If UnitStatus <> 6 then
+    If PressDependent is Off then Goto PressIndCntrl Else Goto PressDepCntrl
+  Endif
+
+E:
+  If PressDependent is On then Goto PressIndCntrl Else Goto PressDepCntrl
+
+ 
