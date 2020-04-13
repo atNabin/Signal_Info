@@ -1,0 +1,22 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Cooling Mode Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Numeric C_OA_EN, CHW_REQ_EN, C_OA_DF
+
+Initialize:
+  C_OA_DF = 4 'Set this value to 4 by default
+  Goto CoolMode
+
+CoolMode:
+  CHW_REQ_SP = maximum(1, CHW_REQ_SP)
+  If NV_CHW_REQ_NUM >= CHW_REQ_SP then Turn On CHW_REQ_EN Else Turn Off CHW_REQ_EN
+  C_OA_EN = POS2.fct(NV_OA_T, C_OA_SP, C_OA_DF, CHW_REQ_EN, 1, C_OA_EN, 0)
+  If C_OA_EN then Turn On C_M Else Turn Off C_M
+
+E:
+  If TS > 10 then Goto Initialize
