@@ -1,0 +1,24 @@
+Numeric CoolFlowBand, HeatFlowBand
+Numeric WarmupFlowStpt, CoolFlowStpt
+
+CFMSetpoint:
+  CoolFlowBand = MaxFlow - MinFlow
+  CoolFlowStpt = MinFlow + (CoolFlowBand) * abs(TerminalLoad)
+  HeatFlowBand = MaxFlowWarmup - MinFlowWarmup
+  WarmupFlowStpt = MinFlowWarmup + (HeatFlowBand) * abs(TerminalLoad)
+  AirflowStpt = (UnitStatus = 1) * (MinFlowHeat) + (UnitStatus = 2) * (WarmupFlowStpt) + (UnitStatus = 3) * (CoolFlowStpt)
+  If UnitStatus = 15 then Goto Calibration
+
+'Cooling Mode - airflow setpoint will be propotional to room setpoint error
+'               across the cooling airflow setpoint band (low to high)
+'Heating Mode - airflow setpoint will be the minimum heating flow setpoint (use reheat)
+'Morning Warmup - airflow setpoint will be proportional to room setpoint error
+'               across the warmup airflow setpoint band (low to high)
+
+Calibration:
+  If UnitStatus <> 15 then Goto CFMSetpoint
+
+E:
+  Goto CFMSetpoint
+
+ 
