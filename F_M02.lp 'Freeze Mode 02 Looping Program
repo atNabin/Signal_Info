@@ -1,0 +1,33 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Freeze Mode
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Numeric FreezeFlag
+Datetime FreezeTime
+
+Initialize:
+  FreezeTime = Date
+  Goto FreezeModeOff
+
+FreezeModeOff:
+  FreezeFlag = POS2.fct(NV_OA_T, F_SP, F_DF, 1, 0, FreezeFlag, 0)
+  If FreezeFlag is Off then
+    FreezeTime = Date
+  Else
+    If Date > FreezeTime + F_M_ON then Goto FreezeModeOn
+  Endif
+  Turn Off F_M
+
+FreezeModeOn:
+  FreezeFlag = POS2.fct(NV_OA_T, F_SP, F_DF, 1, 0, FreezeFlag, 0)
+  If FreezeFlag is Off then Goto FreezeModeOff
+  Turn On F_M
+
+E:
+  Goto FreezeModeOn
+
+
