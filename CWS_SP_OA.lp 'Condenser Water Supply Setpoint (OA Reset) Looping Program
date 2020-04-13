@@ -1,0 +1,30 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  CW Supply Setpoint Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+ManualSetpoint:
+  CWS_SP = minimum(CWS_SP_H, maximum(CWS_SP_MAN, CWS_SP_L))
+  If CWS_SP_OP then
+    CWS_SP_OP.str = "Reset"
+    Goto OAResetSetpoint
+  Else
+    CWS_SP_OP.str = "Manual"
+  Endif
+
+OAResetSetpoint:
+  CWS_SP_OA = CURVE4.fct(NV_OA_T, CWS_SP_OA[1], CWS_SP_OA[2], CWS_SP_OA[3], CWS_SP_OA[4], CWS_SP_OA[5], CWS_SP_OA[6], CWS_SP_OA[7], CWS_SP_OA[8])
+  CWS_SP = minimum(CWS_SP_H, maximum(CWS_SP_OA, CWS_SP_L))
+  If not CWS_SP_OP then
+    CWS_SP_OP.str = "Manual"
+    Goto ManualSetpoint
+  Else
+    CWS_SP_OP.str = "Reset"
+  Endif
+
+E:
+  If TS > 10 then Goto ManualSetpoint
+
