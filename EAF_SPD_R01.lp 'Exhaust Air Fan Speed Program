@@ -1,0 +1,39 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  EA Fan Speed Control Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Numeric EAF_SP_ERR_RST[8]
+Numeric EAF_RST
+Numeric RampFraction
+
+Initialize:
+  EAF_SP_ERR_RST[1] = 2
+  EAF_SP_ERR_RST[2] = 0.2
+  EAF_SP_ERR_RST[3] = 4
+  EAF_SP_ERR_RST[4] = 0.5
+  EAF_SP_ERR_RST[5] = 6
+  EAF_SP_ERR_RST[6] = 0.8
+  EAF_SP_ERR_RST[7] = 8
+  EAF_SP_ERR_RST[8] = 1
+  Goto ResetOff
+
+ResetOff:
+  SP_ERR = R_T - R_SPV
+  If EAF_RI then Goto ResetOn
+  EAF_RST = 0
+  EAF_SPD = RMP.fct(EAF_SPD, EAF_RST, EAF_RMP, RampFraction)
+
+ResetOn:
+  SP_ERR = R_T - R_SPV
+  If not EAF_RI then Goto ResetOff
+  EAF_RST = CURVE4.fct(SP_ERR, EAF_SP_ERR_RST[1], EAF_SP_ERR_RST[2], EAF_SP_ERR_RST[3], EAF_SP_ERR_RST[4], EAF_SP_ERR_RST[5], EAF_SP_ERR_RST[6], EAF_SP_ERR_RST[7], EAF_SP_ERR_RST[8])
+  EAF_SPD = RMP.fct(EAF_SPD, minimum(maximum(EAF_RST, EAF_SPD_L), EAF_SPD_H), EAF_RMP, RampFraction)
+
+E:
+  If TS > 10 then Goto Initialize
+
+
