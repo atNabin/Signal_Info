@@ -1,0 +1,21 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Dehumidification Mode Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Numeric DEH_H_EN, DEH_R_EN
+
+Dehumidification:
+  DEH_H_EN = POS2.fct(R_H, DEH_H_SP, DEH_H_DF, 1, 1, DEH_H_EN, 0)
+  DEH_R_EN = POS2.fct(R_T, DEH_R_SP, DEH_R_DF, EFF_OCC = 2, 1, DEH_R_EN, 0)
+  If DEH_H_EN then
+    If DEH_R_EN or EFF_OCC <> 2 then Turn On DEH_M Else Turn Off DEH_M
+  Else
+    Turn Off DEH_M
+  Endif
+
+E:
+  If TS > 10 then goto Dehumidification
