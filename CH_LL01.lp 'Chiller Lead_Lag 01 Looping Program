@@ -1,0 +1,58 @@
+'****************************************
+'Author:  Chad Lovell
+'Date:  11/27/2006
+'Description:  Chiller Call Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Numeric LagCHWR
+Numeric LagEnable
+Numeric Chillers
+Datetime LagStamp
+
+LeadCallCheck:
+  Chillers = LDLG.fct(CH_LD_CL, CH_LG_CL, CH#1_EN, CH#2_EN, CH#1_F, CH#2_F, CH#1_STG, CH#2_STG, CH#1_RT, CH#2_RT, CH#1_MLO, CH#2_MLO, CH_LDLG_EN, CH_LDLG_MAN)
+  If CH#1_STG <= Chillers then Turn On CH#1_CL Else Turn Off CH#1_CL
+  If CH#2_STG <= Chillers then Turn On CH#2_CL Else Turn Off CH#2_CL
+
+  CH_CHWR_LGSP = CHWS_SP + CH_CHWR_LGOFS
+
+  CH_LD_CL = C_M and not CHWR_LO and not F_M
+  If not CH_LD_CL then
+    Turn Off CH_LG_CL
+  Endif
+  If CH_LD_CL then
+    LagStamp = Date
+    Goto LagCallCheck
+  Endif
+
+LagCallCheck:
+  Chillers = LDLG.fct(CH_LD_CL, CH_LG_CL, CH#1_EN, CH#2_EN, CH#1_F, CH#2_F, CH#1_STG, CH#2_STG, CH#1_RT, CH#2_RT, CH#1_MLO, CH#2_MLO, CH_LDLG_EN, CH_LDLG_MAN)
+  If CH#1_STG <= Chillers then Turn On CH#1_CL Else Turn Off CH#1_CL
+  If CH#2_STG <= Chillers then Turn On CH#2_CL Else Turn Off CH#2_CL
+
+  CH_CHWR_LGSP = CHWS_SP + CH_CHWR_LGOFS
+
+  CH_LD_CL = C_M and not CHWR_LO and not F_M
+  If not CH_LD_CL then Goto LeadCallCheck
+  LagEnable = ((CH#1_STG = 1 and CH#1_EN) or (CH#2_STG = 1 and CH#2_EN)) and CH_LD_CL
+
+  LagCHWR = POS2.fct(CHWR_T, CH_CHWR_LGSP, CH_CHWR_LGDF, LagEnable, 1, LagCHWR, 0)
+
+  If CH_LG_CL then
+    If LagCHWR is Off then
+      If Date > LagStamp + CH_LG_OF then Turn Off CH_LG_CL
+    Else
+      LagStamp = Date
+    Endif
+  Else
+    If LagCHWR is On then
+      If Date > LagStamp + CH_LG_ON then Turn On CH_LG_CL
+    Else
+      LagStamp = Date
+    Endif
+  Endif
+
+E:
+  If TS > 10 then goto LeadCallCheck
