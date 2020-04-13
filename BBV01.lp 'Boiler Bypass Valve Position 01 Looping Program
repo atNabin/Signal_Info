@@ -1,0 +1,54 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Boiler Bypass Valve Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Numeric LastError 'Stores last error for later calculation
+Numeric PIDMin, PIDMax 'max and min PID limits
+Datetime LastTime 'last time PID was calculated
+
+Initialize: 'initialize PID parameters
+  PIDMin = 0
+  PIDMax = 1
+  LastError = 0
+  LastTime = Date
+  Basedon B#1BV_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+PID_Off: 'turn off PID (maintain last position)
+  If HWP#1_RI and H_M then B#1BV_PM = 1 Else B#1BV_PM = 3
+  B#1BV_POS = B#BV_PID
+  LastError = 0
+  LastTime = Date
+  Basedon B#1BV_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+PID_On: 'allow PID to modulate
+  If HWP#1_RI and H_M then B#1BV_PM = 1 Else B#1BV_PM = 3
+  If Date >= LastTime + B#1BV_CI then
+    B#1BV_PID = PI.fct(HWS_T, HWS_SP, B#1BV_PB, B#1BV_IT, B#1BV_ST, B#1BV_CI, B#1BV_DZ, PIDMax, PIDMin, 1, LastError, LastTime, B#1BV_PID, B#1BV_POS)
+  Endif
+  B#1BV_POS = B#1BV_PID
+  Basedon B#1BV_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+PID_Max: 'send PID to maximum position
+  If HWP#1_RI and H_M then B#1BV_PM = 1 Else B#1BV_PM = 3
+  B#1BV_PID = PIDMax
+  B#1BV_POS = B#1BV_PID
+  LastError = 0
+  LastTime = Date
+  Basedon B#1BV_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+PID_Min: 'send PID to minimum position
+  If HWP#1_RI and H_M then B#1BV_PM = 1 Else B#1BV_PM = 3
+  B#1BV_PID = PIDMin
+  B#1BV_POS = B#1BV_PID
+  LastError = 0
+  LastTime = Date
+  Basedon B#1BV_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+E:
+  LastError = 0
+  LastTime = Date
+  If TS > 10 then goto Initialize
