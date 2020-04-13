@@ -1,0 +1,22 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Heating Mode Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Numeric H_OA_EN, HW_REQ_EN, H_OA_DF
+
+Initialize:
+H_OA_DF = 4 'Initialize the differential to 4 degrees
+Goto HeatMode
+
+HeatMode:
+  HW_REQ_SP = maximum(1, HW_REQ_SP) 'sets a minimum of 1
+  If NV_HW_REQ_NUM >= HW_REQ_SP then Turn On HW_REQ_EN Else Turn Off HW_REQ_EN
+  H_OA_EN = POS2.fct(NV_OA_T, H_OA_SP, H_OA_DF, HW_REQ_EN, 0, H_OA_EN, 0)
+  If H_OA_EN then Turn On H_M Else Turn Off H_M
+
+E:
+  If TS > 10 then goto Initialize
