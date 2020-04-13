@@ -1,0 +1,33 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Freeze Mode
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Numeric FreezeFlag, F_Differential
+Datetime FreezeTime
+
+Initialize:
+'Set Freeze Mode Differential - default = 2.0
+  F_Differential = 2.0
+  FreezeTime = Date
+  Goto FreezeModeOff
+
+FreezeModeOff:
+  FreezeFlag = POS2.fct(NV_OA_T, F_SP, F_Differential, 1, 0, FreezeFlag, 0)
+  If not FreezeFlag then
+    FreezeTime = Date
+  Else
+    If Date > FreezeTime + F_M_ON then Goto FreezeModeOn
+  Endif
+  Turn Off F_M
+
+FreezeModeOn:
+  FreezeFlag = POS2.fct(NV_OA_T, F_SP, F_Differential, 1, 0, FreezeFlag, 0)
+  If not FreezeFlag then Goto FreezeModeOff
+  Turn On F_M
+
+E:
+  If TS > 10 then Goto Initialize
