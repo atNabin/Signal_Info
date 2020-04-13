@@ -1,0 +1,30 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Chiller Enable Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Datetime OnTime
+
+ChillerOff:
+  If not ANY_CHWP_RI or not C_M or F_M or CHWR_LO then
+    Turn Off CH#_EN
+    OnTime = Date
+  Else
+    If Date > OnTime + CH#_ON then Goto ChillerOn
+  Endif
+
+ChillerOn:
+  If ANY_CHWP_RI and C_M and not F_M and not CHWR_LO then
+    Turn On CH#_EN
+  Else
+    Goto ChillerOff
+  Endif
+
+E:
+  If TS > 10 then Goto ChillerOff
+
+
+  
