@@ -1,0 +1,39 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Enthalpy Calculations
+'****************************************
+
+Arg 1 T 'dry bulb temperature (deg-F)
+Arg 2 H 'relative humidity (%)
+
+Numeric c8, c9, c10, c11, c12, c13, Tr, pws, pw, W, Enth
+
+c8 = -10440.4
+c9 = -11.2947
+c10 = -0.0270224
+c11 = 1.28904e-005
+c12 = -2.47807e-009
+c13 = 6.54597
+
+'The water vapor pressure over liquid water for the temperature
+'range -80 to 300 deg-F is approximated by the following function
+
+Tr = T + 459.69 'Absolute Temperature (degrees Rankin)
+pws = exponential(c8 / Tr + c9 + c10 * Tr + c11 * Tr ^ 2 + c12 * Tr ^ 3 + c13 * ln(Tr)) 'Saturation Pressure (psia)
+
+'The enthalpy of moist air at normal atmospheric pressure as a
+'function of the dry-bulb temperature and the relative humidity
+'is then given by the following equations:
+
+pw = H * pws 'partial pressure of water vapor in moist air (psi)
+W = 0.62198 * pw / (14.7 - pw) 'humidity ratio, mass of water per unit mass of dry air
+'101325 psi is ambient pressure = 14.7 N/m/m
+Enth = 0.24 * T + W * (1061 + 0.444 * T) 'Enthalpy
+
+Return Enth
+
+
+
+
+ 
