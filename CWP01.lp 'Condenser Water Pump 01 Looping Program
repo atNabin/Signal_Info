@@ -1,0 +1,42 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  CW Pump Command Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Datetime FailStamp, OffTime
+
+Initialize:
+  FailStamp = Date
+  OffTime = Date
+  Goto PumpOff
+
+PumpOn:
+  If (C_M and CHWP#1_RI) or (F_M and not CWP_F_LO) then
+    Turn On CWP#1_CMD
+    OffTime = Date
+  Else
+    If Date > OffTime + CWP#1_OF or CWP_F_LO then Goto PumpOff
+  Endif
+  If CWP#1_CMD and not CWP#1_RI then
+    If Date > FailStamp + 180 then Turn On CWP#1_F
+  Else
+    FailStamp = Date
+    Turn Off CWP#1_F
+  Endif
+  If CWP#1_CMD then CWP#1_CMD.str = "Start" Else CWP#1_CMD.str = "Stop"
+
+PumpOff:
+  If (C_M and CHWP#1_RI) or (F_M and not CWP_F_LO) then
+    FailStamp = Date
+    Goto PumpOn
+  Else
+    Turn Off CWP#1_CMD
+  Endif
+  If CWP#1_CMD then CWP#1_CMD.str = "Start" Else CWP#1_CMD.str = "Stop"
+
+E:
+  If TS > 10 then goto PumpOff
+
