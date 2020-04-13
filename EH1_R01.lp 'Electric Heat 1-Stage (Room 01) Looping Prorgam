@@ -1,0 +1,34 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Electric Heat Staging
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Datetime OffTime, OnTime
+Numeric EHCall, EHDiff
+
+Initialize:
+  EHDiff = 2 ' 2 Degree differential
+
+HeatOff:
+  EHCall = POS2.fct(R#1_T, R_SPH, EHDiff, not HC_M and (EFF_OCC <> 2 or SUSB_M = 2), 0, EHCall, 0)
+  If EHCall and SAF_RI then
+    If Date > OffTime + EH_CYCT and Date > OnTime + EH1_ON then Goto HeatStage1
+  Else
+    OnTime = Date
+    Turn Off EH1_CMD
+  Endif
+
+HeatStage1:
+  H_CL = POS2.fct(R#1_T, R_SPH, EH_DF, not HC_M and (EFF_OCC <> 2 or SUSB_M = 2), 0, H_CL, 0)
+  If H_CL and SAF_RI then
+    Turn On EH1_CMD
+  Else
+    OffTime = Date
+    Goto HeatOff
+  Endif
+
+E:
+  If TS > 10 then Goto HeatOff
