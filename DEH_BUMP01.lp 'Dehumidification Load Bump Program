@@ -1,0 +1,41 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Dehumidification Load Bump Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Datetime LastEval
+
+Initialize:
+'Bump Amount (default=1%)
+  DEH_BUMP = 0.01 '1%
+
+'Control Interval (default=180)
+  DEH_CI = 180
+  Goto NoBump
+
+NoBump:
+  LastEval = Date
+  If SAF_RI then Goto DeHumBump
+  If not SAF_RI then DEH_LOAD = 0
+  DEH_REQ = 0
+
+DeHumBump:
+  If not SAF_RI then Goto NoBump
+  If (Date > LastEval + DEH_CI) then
+    If R_DP > R_DP_SP then
+      DEH_LOAD = maximum(minimum(DEH_LOAD + DEH_BUMP, 1), 0)
+    Else
+      If R_DP < R_DP_SP then DEH_LOAD = maximum(minimum(DEH_LOAD - DEH_BUMP, 1), 0)
+    Endif
+    LastEval = Date
+  Endif
+  DEH_REQ = POS2.fct(DEH_LOAD, 50%, 90%, 1, 1, DEH_REQ, 0)
+
+E:
+  If TS > 10 then Goto Initialize
+
+
+
