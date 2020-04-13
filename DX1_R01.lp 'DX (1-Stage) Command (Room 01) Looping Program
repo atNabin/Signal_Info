@@ -1,0 +1,44 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  DX Staging
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Numeric OALockout, MALockout
+Numeric DX#1Call
+Numeric DXDiff, OA_LODiff, MA_LODiff
+Datetime OffTime, OnTime
+
+Initialize:
+  DXDiff = 3 ' degrees-F
+  OA_LODiff = 6 ' degrees-F
+  OnTime = Date
+  Goto DXOff
+
+DXOff:
+  DX#1_R_SPC = R_SPC + DX#1_R_OFS
+  DX#1Call = POS2.fct(R#1_T, DX#1_R_SPC, DXDiff, UNIT_EN and HC_M and (EFF_OCC <> 2 or SUSB_M = 3), 1, DX#1Call, 0)
+  OALockout = POS2.fct(NV_OA_T, DX_OA_LOSP, OA_LODiff, DX_OALO_OP, 0, OALockout, 0)
+  MALockout = POS2.fct(MA_T, DX_MA_LOSP, MA_LODiff, 1, 0, MALockout, 0)
+  If not OALockout and not MALockout and DX#1Call and SAF_RI then
+    If Date > OffTime + DX#1_CYCT and Date > OnTime + DX#1_ON then Goto DXStage1
+  Else
+    OnTime = Date
+  Endif
+  Turn Off DX#1_CMD
+
+DXStage1:
+  DX#1_R_SPC = R_SPC + DX#1_R_OFS
+  DX#1Call = POS2.fct(R#1_T, DX#1_R_SPC, DXDiff, SAF_RI and UNIT_EN and HC_M and (EFF_OCC <> 2 or SUSB_M = 3), 1, DX#1Call, 0)
+  OALockout = POS2.fct(NV_OA_T, DX_OA_LOSP, OA_LODiff, DX_OALO_OP, 0, OALockout, 0)
+  MALockout = POS2.fct(MA_T, DX_MA_LOSP, MA_LODiff, 1, 0, MALockout, 0)
+  If OALockout or MALockout or not (DX#1Call and SAF_RI) then
+    OffTime = Date
+    Goto DXOff
+  Endif
+  Turn On DX#1_CMD
+
+E:
+  If TS > 10 then Goto DXOff
