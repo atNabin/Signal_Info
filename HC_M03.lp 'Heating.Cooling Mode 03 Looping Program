@@ -1,0 +1,20 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Heating/Cooling Mode
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+HeatMode:
+  If R#1_T > R_SPC then Goto CoolMode
+  HC_M.str = "Heat"
+  Turn Off HC_M
+
+CoolMode:
+  If R#1_T < R_SPH then Goto HeatMode
+  HC_M.str = "Cool"
+  Turn On HC_M
+ 
+E:
+  If TS > 10 Then Goto HeatMode
