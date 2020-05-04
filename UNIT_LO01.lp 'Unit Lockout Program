@@ -1,0 +1,33 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Unit Lockout Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Numeric EnableDelay
+Datetime EnableStamp
+
+SetEnableDelay:
+  EnableDelay = random((Scan * Second * Freemem) Mod 32767) Mod 600 'Set EnableDelay in seconds
+  Goto UnitNormal
+
+UnitNormal:
+  If NV_LOCL_LO then
+    EnableStamp = Date
+    Goto UnitLockout
+  Endif
+  Turn UNIT_LO Off
+
+UnitLockout:
+  If not NV_LOCL_LO then
+    Goto UnitNormal
+  Endif
+  Turn UNIT_LO On
+
+UnitDelay:
+  If Date > EnableStamp + EnableDelay then Goto UnitNormal
+
+E:
+  If TS > 10 then Goto UnitNormal
