@@ -1,0 +1,36 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Effective Occupancy Program for VAV Boxes
+'Flow Type:  Looping 
+'Triggers:  N/A
+'****************************************
+
+Occupied:
+  If (NV_TS_HOL and TS#1_HOL_OP) then Goto HolidayUnoc
+  If TSCHED#1 then
+    EFF_OCC = 1
+    VAV_OCC_CMD = 1
+    EFF_OCC.str = "Occupied"
+  Else
+    Goto Unoccupied
+  Endif
+
+Unoccupied:
+  If (NV_TS_HOL and TS#1_HOL_OP) then Goto HolidayUnoc
+  If (SAF_RI or SUSB_M >1) then VAV_OCC_CMD = 1 Else VAV_OCC_CMD = 2
+  If not TSCHED#1 then
+    EFF_OCC = 2
+    EFF_OCC.str = "Unoccupied"
+  Else
+    Goto Occupied
+  Endif
+
+HolidayUnoc:
+  If (not NV_TS_HOL or not TS#1_HOL_OP) then Basedon EFF_OCC Goto Occupied, Unoccupied
+  If SAF_RI then VAV_OCC_CMD = 1 Else VAV_OCC_CMD = 2
+  EFF_OCC = 2
+  EFF_OCC.str = "Holiday"
+
+E:
+  If TS > 10 then Goto Occupied
