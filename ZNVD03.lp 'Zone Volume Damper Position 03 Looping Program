@@ -1,0 +1,43 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Zone Volume Damper Position
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Numeric CoolPosition, HeatPosition
+Numeric CoolBand, HeatBand
+Numeric RampFraction
+
+DamperPosition:
+  If ZN##VD_CB <> 0 then CoolBand = 0 Else CoolBand = 1 'prevents division by zero
+  If ZN##_T > (ZN##_SPC + ZN##VD_CB / 2) then
+    CoolPosition = 1
+  Else
+    If ZN##_T < (ZN##_SPC - ZN##VD_CB / 2) then
+      CoolPosition = ZN##VD_POS_L
+    Else
+      CoolPosition = (ZN##_T - (ZN##_SPC - ZN##VD_CB / 2)) * (1 - ZN##VD_POS_L) / (ZN##VD_CB + CoolBand) + ZN##VD_POS_L
+    Endif
+  Endif
+
+  If ZN##VD_HB <> 0 then HeatBand = 0 Else HeatBand = 1 'prevents division by zero
+  If ZN##_T < (ZN##_SPH - ZN##VD_HB / 2) then
+    HeatPosition = 1
+  Else
+    If ZN##_T > (ZN##_SPH + ZN##VD_HB / 2) then
+      HeatPosition = ZN##VD_POS_L
+    Else
+      HeatPosition = (ZN##_T - (ZN##_SPH - ZN##VD_CB / 2) - ZN##VD_HB) * (ZN##VD_POS_L - 1) / (ZN##VD_HB + HeatBand) + ZN##VD_POS_L
+    Endif
+  Endif
+
+  If SAF_RI then
+    ZN##VD_POS = RMP.fct(ZN##VD_POS, maximum(CoolPosition, HeatPosition), 1 / ZN##VD_ST, RampFraction)
+  Else
+    ZN##VD_POS = 0
+  Endif
+
+E:
+  If TS > 10 then goto DamperPosition
