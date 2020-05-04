@@ -1,0 +1,43 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Room Setpoint Calculation
+'****************************************
+
+Arg 1 ADJ
+Arg 2 SPC_B
+Arg 3 SPH_B
+Arg 4 SPC_L
+Arg 5 SPH_H
+Arg 6 SP_DFL
+Arg 7 SPC
+Arg 8 SPH
+Arg 9 HC
+Arg 10 SPC_TEMP
+Arg 11 SPH_TEMP
+
+Numeric SP
+
+SP = 0
+SPC_B = maximum(SPC_L, SPC_B)
+SPH_B = minimum(SPH_H, SPH_B)
+If SPC_B - SPH_B < SP_DFL then
+  If SPC_TEMP <> SPC_B then
+    SPH_B = SPC_B - SP_DFL
+  Else
+    If SPH_TEMP <> SPH_B then
+      SPC_B = SPH_B + SP_DFL
+    Else
+      If SPC_B - SPC_L < SPH_H - SPH_B then SPC_B = SPH_B + SP_DFL Else SPH_B = SPC_B - SP_DFL
+    Endif
+  Endif
+Endif
+SPH = minimum(SPH_H, SPH_B + minimum(2, maximum(-2, ADJ)))
+SPC = maximum(SPC_L, SPC_B + minimum(2, maximum(-2, ADJ)))
+SP = (HC is Off) * SPH + (HC is On) * SPC
+SPC_TEMP = SPC_B
+SPH_TEMP = SPH_B
+
+Return SP
+
+ 
