@@ -1,0 +1,35 @@
+'****************************************
+'Author:  
+'Date:   
+'Description:  Zone Effective Occupancy Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Occupied:
+  If (not NV_TS_HOL and ZN#1_HOL_OP) then Goto HolidayUnoc
+  If TSCH#1 then
+    ZN#1_EFF_OCC = 1
+    ZN#1_EFF_OCC.str = "Occupied"
+  Else
+    Goto Unoccupied
+  Endif
+
+Unoccupied:
+  If (not NV_TS_HOL and ZN#1_HOL_OP) then Goto HolidayUnoc
+  If not TSCH#1 then
+    ZN#1_EFF_OCC = 2
+    ZN#1_EFF_OCC.str = "Unoccupied"
+  Else
+    Goto Occupied
+  Endif
+
+HolidayUnoc:
+  If (NV_TS_HOL or not ZN#1_HOL_OP) then Basedon ZN#1_EFF_OCC Goto Occupied, Unoccupied
+  ZN#1_EFF_OCC = 2
+  ZN#1_EFF_OCC.str = "Holiday"
+
+E:
+  If TS > 10 then Goto Occupied
+
+
