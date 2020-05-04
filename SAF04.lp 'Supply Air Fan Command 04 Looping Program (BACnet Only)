@@ -1,0 +1,42 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Fan Command Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Datetime FailStamp, OnTime, OffTime
+
+Initialize:
+  FailStamp = Date
+  OnTime = Date
+  OffTime = Date
+  Goto FanOn
+
+FanOn:
+  If EFF_OCC <> 2 or SUSB_M = 3 then
+    Turn On SAF_CMD
+    OffTime = Date
+  Else
+    If Date > OffTime + SAF_OF then Goto FanOff
+  Endif
+  If SAF_CMD and not SAF_RI then
+    If Date > FailStamp + 180 then Turn On SAF_F
+  Else
+    FailStamp = Date
+    Turn Off SAF_F
+  Endif
+  If SAF_CMD then SAF_CMD.str = "Start" Else SAF_CMD.str = "Stop"
+
+FanOff:
+  If EFF_OCC = 2 and SUSB_M <> 3 then
+    Turn Off SAF_CMD
+    OnTime = Date
+  Else
+    If Date > OnTime + SAF_ON then Goto FanOn
+  Endif
+  If SAF_CMD then SAF_CMD.str = "Start" Else SAF_CMD.str = "Stop"
+
+E:
+  If TS > 10 then goto Initialize
