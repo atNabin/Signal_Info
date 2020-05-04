@@ -1,0 +1,172 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Viconic 7600B Data Management Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Numeric LastMinute, UnitNum, Last_OA_T, WaitTime
+Datetime TimeStamp
+
+Initialize:
+  UnitNum = 1 'set this for each unit
+  WaitTime = 3 'tweak this for performance
+  TimeStamp = Date 'initialize runtime date
+  Goto Wait
+
+Wait:
+  If Second = UnitNum then
+    If LastMinute <> Minute then
+      LastMinute = Minute
+'*'      If (BACnetDevices\BNet_####\PU#1\RoomTemperature = 0) then Goto E
+    Endif
+  Endif
+  If TS > 10 then Goto Rd_R_T
+
+Rd_R_T:
+  If TS < WaitTime then Goto Rd_R_T
+'*'  PU#1_R_T = BACnetDevices\BNet_####\PU#1\RoomTemperature
+  Goto Rd_SA_T
+
+Rd_SA_T:
+  If TS < WaitTime then Goto Rd_SA_T
+'*'  PU#1_SA_T = BACnetDevices\BNet_####\PU#1\SupplyTemperatur
+  Goto Rd_SAF_CMD
+
+Rd_SAF_CMD:
+  If TS < WaitTime then Goto Rd_SAF_CMD
+'*'  PU#1_SAF_CMD = BACnetDevices\BNet_####\PU#1\GFan
+  Goto Rd_R_SPC
+
+Rd_R_SPC:
+  If TS < WaitTime then Goto Rd_R_SPC
+  If (PU#1_HC_M = 1 and PU#1_EFF_OCC <> 2) or Minute = UnitNum then
+'*'    PU#1_R_SPC = BACnetDevices\BNet_####\PU#1\OccupiedCoolSetp
+  Endif
+  Goto Rd_R_SPH
+
+Rd_R_SPH:
+  If TS < WaitTime then Goto Rd_R_SPH
+  If (PU#1_HC_M = 0 and PU#1_EFF_OCC <> 2) or Minute = UnitNum then
+'*'    PU#1_R_SPH = BACnetDevices\BNet_####\PU#1\OccupiedHeatSetp
+  Endif
+  Goto Rd_Y1_CMD
+
+Rd_Y1_CMD:
+  If TS < WaitTime then Goto Rd_Y1_CMD
+'*'  PU#1_Y1_CMD = BACnetDevices\BNet_####\PU#1\Y1Cool
+  Goto Rd_Y2_CMD
+
+Rd_Y2_CMD:
+  If TS < WaitTime then Goto Rd_Y2_CMD
+'*'  PU#1_Y2_CMD = BACnetDevices\BNet_####\PU#1\Y2Cool
+  Goto Rd_W1_CMD
+
+Rd_W1_CMD:
+  If TS < WaitTime then Goto Rd_W1_CMD
+'*'  PU#1_W1_CMD = BACnetDevices\BNet_####\PU#1\W1Heat
+  Goto Rd_W2_CMD
+
+Rd_W2_CMD:
+  If TS < WaitTime then Goto Rd_W2_CMD
+'*'  PU#1_W2_CMD = BACnetDevices\BNet_####\PU#1\W2Heat
+  Goto Rd_AUX
+
+Rd_AUX:
+  If TS < WaitTime then Goto Rd_AUX
+'*'  PU#1_AUX_CMD = BACnetDevices\BNet_####\PU#1\AUX
+  Goto Wrt_SPC_L
+
+Wrt_SPC_L:
+  If TS < WaitTime then Goto Wrt_SPC_L
+'*'  If (BACnetDevices\BNet_####\PU#1\CoolingSetpointL Value) <> PU#1_SPC_L then WriteProperty(BACnetDevices\BNet_####\PU#1\CoolingSetpointL Value, PU#1_SPC_L, 10)
+  Goto Wrt_SPH_H
+
+Wrt_SPH_H:
+  If TS < WaitTime then Goto Wrt_SPH_H
+'*'  If (BACnetDevices\BNet_####\PU#1\HeatingSetpointL Value) <> PU#1_SPH_H then WriteProperty(BACnetDevices\BNet_####\PU#1\HeatingSetpointL Value, PU#1_SPH_H, 10)
+  Goto Wrt_UNOC_SPC
+
+Wrt_UNOC_SPC:
+  If TS < WaitTime then Goto Wrt_UNOC_SPC
+'*'  If (BACnetDevices\BNet_####\PU#1\UnoccupiedCoolSe Value) <> PU#1_UNOC_SPC then WriteProperty(BACnetDevices\BNet_####\PU#1\UnoccupiedCoolSe Value, PU#1_UNOC_SPC, 10)
+  Goto Wrt_UNOC_SPH
+
+Wrt_UNOC_SPH:
+  If TS < WaitTime then Goto Wrt_UNOC_SPH
+'*'  If (BACnetDevices\BNet_####\PU#1\UnoccupiedHeatSe Value) <> PU#1_UNOC_SPH then WriteProperty(BACnetDevices\BNet_####\PU#1\UnoccupiedHeatSe Value, PU#1_UNOC_SPH, 10)
+  Goto Wrt_SP_DFL
+
+Wrt_SP_DFL:
+  If TS < WaitTime then Goto Wrt_SP_DFL
+'*'  If (BACnetDevices\BNet_####\PU#1\Deadband_1 Value) <> PU#1_SP_DFL then WriteProperty(BACnetDevices\BNet_####\PU#1\Deadband_1 Value, PU#1_SP_DFL, 10)
+  Goto Wrt_Occ
+
+Wrt_Occ:
+  If TS < WaitTime then Goto Wrt_Occ
+  If PU#1_EFF_OCC <> (2 - TSCHED#1) and PU#1_EFF_OCC <> 3 then
+'*'    WriteProperty(BACnetDevices\BNet_####\PU#1\Occupancy Value, 3 - TSCHED#1, 10)
+    PU#1_EFF_OCC = 2 - TSCHED#1
+  Else
+'*'    PU#1_EFF_OCC = (BACnetDevices\BNet_####\PU#1\Occupancy) - 1
+  Endif
+  If PU#1_EFF_OCC = 1 then PU#1_EFF_OCC.str = "Occupied"
+  If PU#1_EFF_OCC = 2 then PU#1_EFF_OCC.str = "Unoccupied"
+  If PU#1_EFF_OCC = 3 then PU#1_EFF_OCC.str = "Bypass"
+  If PU#1_EFF_OCC = 4 then PU#1_EFF_OCC.str = "Standby"
+  Goto Wrt_OA_T
+
+Wrt_OA_T:
+  If TS < WaitTime then Goto Wrt_OA_T
+'*'  If (BACnetDevices\BNet_####\PU#1\OutdoorTempOverr Value) <> 1 then WriteProperty(BACnetDevices\BNet_####\PU#1\OutdoorTempOverr, 1, 10)
+  If abs(Last_OA_T - NV_OA_T) > 1 or Minute = UnitNum then
+'*'    WriteProperty(BACnetDevices\BNet_####\PU#1\OutdoorTemperatu, NV_OA_T, 10)
+    Last_OA_T = NV_OA_T
+  Endif
+  Goto Wrt_FAN_MODE
+
+Wrt_FAN_MODE:
+  If TS < WaitTime then Goto Wrt_FAN_MODE
+'*'  If (BACnetDevices\BNet_####\PU#1\FanMode Value) <> 2 then WriteProperty(BACnetDevices\BNet_####\PU#1\FanMode, 2, 10)
+  Goto Wrt_OVR_TMH
+
+Wrt_OVR_TMH:
+  If TS < WaitTime then Goto Wrt_OVR_TMH
+'*'  If (BACnetDevices\BNet_####\PU#1\TemporaryOccupan Value) <> PU#1_OVR_TMH then WriteProperty(BACnetDevices\BNet_####\PU#1\TemporaryOccupan, PU#1_OVR_TMH, 10)
+  Goto Wrt_SYS_MODE
+
+Wrt_SYS_MODE:
+  If TS < WaitTime then Goto Wrt_SYS_MODE
+  If LOCL_LO then
+'*'    If (BACnetDevices\BNet_####\PU#1\SystemModeRTU Value) <> 1 then WriteProperty(BACnetDevices\BNet_####\PU#1\SystemModeRTU, 1, 10)
+  Else
+'*'    If (BACnetDevices\BNet_####\PU#1\SystemModeRTU Value) <> 2 then WriteProperty(BACnetDevices\BNet_####\PU#1\SystemModeRTU, 2, 10)
+  Endif
+  Goto Calc_RT
+
+Calc_RT:
+  If NV_RT_RST then
+    PU#1_SAF_RT = 0
+    PU#1_Y1_RT = 0
+    PU#1_Y2_RT = 0
+    PU#1_W1_RT = 0
+    PU#1_W2_RT = 0
+    PU#1_AUX_RT = 0
+  Endif
+  If PU#1_SAF_CMD then PU#1_SAF_RT = PU#1_SAF_RT + DiffTime(Second, TimeStamp, Date) / 3600
+  If PU#1_Y1_CMD then PU#1_Y1_RT = PU#1_Y1_RT + DiffTime(Second, TimeStamp, Date) / 3600
+  If PU#1_Y2_CMD then PU#1_Y2_RT = PU#1_Y2_RT + DiffTime(Second, TimeStamp, Date) / 3600
+  If PU#1_W1_CMD then PU#1_W1_RT = PU#1_W1_RT + DiffTime(Second, TimeStamp, Date) / 3600
+  If PU#1_W2_CMD then PU#1_W2_RT = PU#1_W2_RT + DiffTime(Second, TimeStamp, Date) / 3600
+  If PU#1_AUX_CMD then PU#1_AUX_RT = PU#1_AUX_RT + DiffTime(Second, TimeStamp, Date) / 3600
+  TimeStamp = Date 'Last time RT was calculated
+  Goto Set_Mode
+
+Set_Mode:
+  If not PU#1_HC_M and PU#1_Y1_CMD then Turn On PU#1_HC_M 'Unit is in Cooling
+  If PU#1_HC_M and PU#1_W1_CMD then Turn Off PU#1_HC_M 'Unit is in Heating
+  Goto Wait
+
+E:
+  Goto Wait
