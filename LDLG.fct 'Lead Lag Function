@@ -1,0 +1,82 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Lead/Lag Function
+'****************************************
+
+Arg 1 LeadCall
+Arg 2 LagCall
+Arg 3 Dev1_Status
+Arg 4 Dev2_Status
+Arg 5 Dev1_Fail
+Arg 6 Dev2_Fail
+Arg 7 Dev1_Stage
+Arg 8 Dev2_Stage
+Arg 9 Dev1_RunTime
+Arg 10 Dev2_RunTime
+Arg 11 Dev1_MLO
+Arg 12 Dev2_MLO
+Arg 13 LdLg_Enable
+Arg 14 LdLg_Manual
+
+Numeric Result
+
+'Maintenance Lockout
+If Dev1_MLO and not Dev2_MLO then
+  Dev2_Stage = 1
+  Dev1_Stage = 2
+Endif
+If Dev2_MLO and not Dev1_MLO then
+  Dev1_Stage = 1
+  Dev2_Stage = 2
+Endif
+
+If Dev1_MLO + Dev2_MLO = 0 then
+
+'Manual Lead/Lag
+  If LdLg_Manual then
+    If Dev1_Stage = 1 then
+      Dev2_Stage = 1
+      Dev1_Stage = 2
+    Else
+      Dev1_Stage = 1
+      Dev2_Stage = 2
+    Endif
+    Turn Off LdLg_Manual
+  Endif
+
+'Auto Lead/Lag
+  If LdLg_Enable and Weekday = 4 and Hour = 0 and Minute = 0 then
+    If Dev1_Status = Dev2_Status then
+      If Dev1_Fail + Dev2_Fail = 0 then
+        If Dev1_RunTime > Dev2_RunTime then
+          Dev2_Stage = 1
+          Dev1_Stage = 2
+        Else
+          Dev1_Stage = 1
+          Dev2_Stage = 2
+        Endif
+      Endif
+    Endif
+  Endif
+
+'Fail Conditions
+  If Dev1_Fail and not Dev2_Fail then
+    Dev2_Stage = 1
+    Dev1_Stage = 2
+  Endif
+  If Dev2_Fail and not Dev1_Fail then
+    Dev1_Stage = 1
+    Dev2_Stage = 2
+  Endif
+  If Dev1_Fail and Dev2_Fail then
+    Dev1_Stage = 1
+    Dev2_Stage = 1
+  Endif
+
+Endif
+
+'Number of devices that should be running
+Result = minimum((2 - Dev1_MLO - Dev2_MLO), LeadCall + LagCall)
+
+Return Result
