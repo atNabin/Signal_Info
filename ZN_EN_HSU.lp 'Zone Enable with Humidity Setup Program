@@ -1,0 +1,190 @@
+'Program: Redwire Enable with Humidity Setup
+'Maintained by: GRH
+'Last Updated: 8-20-09
+'Modified by: 
+'Modification:
+'
+Datetime OVRStartTime, EnableStamp
+Numeric LastRTMinute, LastOVRState
+Numeric EvalDelay, DPOffset
+Numeric OAStpt, OAEnable, OADiff, DPEnable, DPDiff, RHEnable, HSUDiff
+Datetime EvalStamp
+
+Initialize:
+  EvalDelay = 3 'seconds
+  EvalStamp = Date
+  DPOffset = 3 'degrees-F
+  OADiff = 4 'degrees-F
+  HSUDiff = 0.1 '%
+  LastRTMinute = Minute
+  LastOVRState = ZN#1_OVR_REQ 'Prevents short from triggering override
+  ZN#1_UNIT_ON = random((Scan * Second * Freemem) Mod 32767) Mod 600 'Set UNIT_ON in seconds
+  EnableStamp = Date
+
+  Goto Unoccupied_Mode
+
+Occupied_Mode:
+  If NV_UNIT_LO then Goto Lockout
+  EnableStamp = Date
+
+'--Setup/Setback--
+  ZN#1_SUSB_M = 1 'Inactive during occupancy
+
+'--Effective Occupancy--
+  If TSCHED#2 and (NV_TS_HOL or not ZN#1_HOL_OP) then
+    ZN#1_EFF_OCC = 1 'Stay occupied
+  Else
+    ZN#1_EFF_OCC = 2 'Go unoccupied
+  Endif
+
+'--Runtimes--
+  If NV_RT_RST then
+    ZN#1_EN_RT = 0
+    ZN#1_OCC_RT = 0
+    ZN#1_OVR_RT = 0
+    ZN#1_UNOC_RT = 0
+    ZN#1_FORCED_RT = 0
+  Else
+    If (LastRTMinute <> Minute) and ZN#1_EN OverrideValue then 'OverrideValue reflects output state post-HOA switch
+      ZN#1_EN_RT = ZN#1_EN_RT + 1 / 60
+      ZN#1_OCC_RT = ZN#1_OCC_RT + 1 / 60
+    Endif
+  Endif
+  LastRTMinute = Minute
+
+'--Set output--
+  Turn On ZN#1_EN 'Enable the zone when Occupied
+
+  Basedon ZN#1_EFF_OCC Goto Occupied_Mode, Unoccupied_Mode, Bypass_Mode
+
+Unoccupied_Mode:
+  If NV_UNIT_LO then Goto Lockout
+  EnableStamp = Date
+
+'--Setup/Setback/Humidity Setup--
+  If Date > EvalStamp + EvalDelay then 'evalutate less often to reduce scan times
+    ZN#1_DP = DP_CALC.fct(ZN#1_T, ZN#1_H)
+    OAStpt = ZN#1_DP + DPOffset
+    RHEnable = POS2.fct(ZN#1_H, ZN#1_HSU_SP, HSUDiff, ZN#1_EFF_OCC = 2, 1, RHEnable, 0, 320)
+    DPEnable = POS2.fct(ZN#1_DP, ZN#1_DP_SP, ZN#1_DP_DF, ZN#1_EFF_OCC = 2, 1, DPEnable, 0, 320)
+    OAEnable = POS2.fct(max(NV_OA_T, 55), OAStpt, 4, ZN#1_EFF_OCC = 2, 0, OAEnable, 0, 320)
+    EvalStamp = Date
+  Endif
+
+  If RHEnable or DPEnable or OAEnable then
+    ZN#1_SUSB_M = 4 'Humidity Setup active
+  Else
+    If ZN#1_T <= ZN#1_SB_SP + ZN#1_SB_DF / 2 or ZN#1_T >= ZN#1_SU_SP - ZN#1_SU_DF / 2 then 'Avoid 2-Pos function calls if possible to save Scan
+      If POS2.fct(ZN#1_T, ZN#1_SB_SP, ZN#1_SB_DF, ZN#1_EFF_OCC = 2, 0, ZN#1_SUSB_M = 2, 0, 320) then
+        ZN#1_SUSB_M = 2 'Setback active
+      Else
+        If POS2.fct(ZN#1_T, ZN#1_SU_SP, ZN#1_SU_DF, ZN#1_EFF_OCC = 2, 1, ZN#1_SUSB_M = 3, 0, 320) then
+          ZN#1_SUSB_M = 3 'Setup active
+        Else
+          ZN#1_SUSB_M = 1 'Neither setup nor setback active
+        Endif
+      Endif
+    Else
+      ZN#1_SUSB_M = 1 'Neither setup nor setback active  
+    Endif
+  Endif
+
+'--Effective Occupancy--
+  If TSCHED#2 and (NV_TS_HOL or not ZN#1_HOL_OP) then
+    ZN#1_EFF_OCC = 1 'Switch to occupied
+  Else
+    If ZN#1_T is between 300 and 400 then Turn ZN#1_OVR_REQ On 'OVR button shorted the sensor
+    If ZN#1_OVR_REQ and not LastOVRState then 'OVR button just pressed
+      OVRStartTime = Date
+      ZN#1_EFF_OCC = 3 'Switch to bypass
+    Else
+      LastOVRState = ZN#1_OVR_REQ
+      ZN#1_EFF_OCC = 2 'Still unoccupied
+    Endif
+  Endif
+
+'--Runtimes--
+  If NV_RT_RST then
+    ZN#1_EN_RT = 0
+    ZN#1_OCC_RT = 0
+    ZN#1_OVR_RT = 0
+    ZN#1_UNOC_RT = 0
+    ZN#1_FORCED_RT = 0
+  Else
+    If (LastRTMinute <> Minute) and ZN#1_EN OverrideValue then 'OverrideValue reflects output state post-HOA switch
+      If ZN#1_SUSB_M <> 1 then ZN#1_UNOC_RT = ZN#1_UNOC_RT + 1 / 60 Else ZN#1_FORCED_RT = ZN#1_FORCED_RT + 1 / 60 'Imcrements FORECED_RT if Enable is forced on
+      ZN#1_EN_RT = ZN#1_EN_RT + 1 / 60
+    Endif
+  Endif
+  LastRTMinute = Minute
+
+'--Set output--
+  If ZN#1_SUSB_M <> 1 then Turn On ZN#1_EN Else Turn Off ZN#1_EN 'Only on for setup or setback
+
+  Basedon ZN#1_EFF_OCC Goto Occupied_Mode, Unoccupied_Mode, Bypass_Mode
+
+Bypass_Mode:
+  If ZN#1_T < 300 then Turn Off ZN#1_OVR_REQ
+  If NV_UNIT_LO then Goto Lockout
+  EnableStamp = Date
+
+'--Setup/Setback--
+  ZN#1_SUSB_M = 1 'Inactive during bypass  
+
+'--Effective Occupancy--
+  If TSCHED#2 and (NV_TS_HOL or not ZN#1_HOL_OP) then
+    ZN#1_EFF_OCC = 1 'Go occupied
+  Else
+    If Date > OVRStartTime + ZN#1_OVR_TMH * 3600 then
+      ZN#1_EFF_OCC = 2 'Go unoccupied
+    Else
+      ZN#1_EFF_OCC = 3 'Stay in bypass
+    Endif
+  Endif
+
+'--Runtimes--
+  If NV_RT_RST then
+    ZN#1_EN_RT = 0
+    ZN#1_OCC_RT = 0
+    ZN#1_OVR_RT = 0
+    ZN#1_UNOC_RT = 0
+    ZN#1_FORCED_RT = 0
+  Else
+    If (LastRTMinute <> Minute) and ZN#1_EN OverrideValue then 'OverrideValue reflects output state post-HOA switch
+      ZN#1_EN_RT = ZN#1_EN_RT + 1 / 60
+      ZN#1_OVR_RT = ZN#1_OVR_RT + 1 / 60
+    Endif
+  Endif
+  LastRTMinute = Minute
+
+'--Set output--
+  Turn On ZN#1_EN 'Enable the zone when in Bypass
+
+  Basedon ZN#1_EFF_OCC Goto Occupied_Mode, Unoccupied_Mode, Bypass_Mode
+
+Lockout:
+  If not NV_UNIT_LO then
+    If Date > EnableStamp + ZN#1_UNIT_ON then Goto Unoccupied_Mode
+  Endif
+  Turn Off ZN#1_EN
+
+'--Setup/Setback--
+  ZN#1_SUSB_M = 1 'Inactive during lockout
+
+'--Runtimes--
+  If NV_RT_RST then
+    ZN#1_EN_RT = 0
+    ZN#1_OCC_RT = 0
+    ZN#1_OVR_RT = 0
+    ZN#1_UNOC_RT = 0
+    ZN#1_FORCED_RT = 0
+  Else
+    If (LastRTMinute <> Minute) and ZN#1_EN OverrideValue then 'OverrideValue reflects output state post-HOA switch
+      ZN#1_EN_RT = ZN#1_EN_RT + 1 / 60
+      ZN#1_FORCED_RT = ZN#1_FORCED_RT + 1 / 60
+    Endif
+  Endif
+  LastRTMinute = Minute
+
+E:
+  If TS > 10 then Goto Initialize
