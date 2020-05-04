@@ -1,0 +1,18 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Outside Air Damper Command Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+CommandOff:
+  If EFF_OCC <> 2 and SAF_RI then Goto CommandOn
+  Turn OAD_CMD Off
+
+CommandOn:
+  If EFF_OCC = 2 or not SAF_RI then Goto CommandOff
+  Turn OAD_CMD On
+
+E:
+  If TS > 10 then Goto CommandOff
