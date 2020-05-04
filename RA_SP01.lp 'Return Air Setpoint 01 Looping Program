@@ -1,0 +1,15 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Return Air Setpoint Calculation
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Numeric SPC_TEMP, SPH_TEMP
+
+SetpointCalc:
+  RA_SP = SP_CALC.fct(R_ADJ, RA_SPC_B, RA_SPH_B, RA_SPC_L, RA_SPH_H, RA_SP_DFL, RA_SPC, RA_SPH, HC_M, SPC_TEMP, SPH_TEMP)
+
+E:
+  If TS > 10 then Goto SetpointCalc
