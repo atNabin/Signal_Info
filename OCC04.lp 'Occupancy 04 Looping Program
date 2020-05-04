@@ -1,0 +1,33 @@
+'****************************************
+'Author:  
+'Date:   
+'Description:  Occupancy Determination Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Occupied:
+  If (not NV_TS_HOL and TS#1_HOL_OP) then Goto HolidayUnoc
+  If TSCHED#1 then
+    EFF_OCC = 1
+    EFF_OCC.str = "Occupied"
+  Else
+    Goto Unoccupied
+  Endif
+
+Unoccupied:
+  If (not NV_TS_HOL and TS#1_HOL_OP) then Goto HolidayUnoc
+  If not TSCHED#1 then
+    EFF_OCC = 2
+    EFF_OCC.str = "Unoccupied"
+  Else
+    Goto Occupied
+  Endif
+
+HolidayUnoc:
+  If (NV_TS_HOL or not TS#1_HOL_OP) then Basedon EFF_OCC Goto Occupied, Unoccupied
+  EFF_OCC = 2
+  EFF_OCC.str = "Holiday"
+
+E:
+  If TS > 10 then Goto Occupied
