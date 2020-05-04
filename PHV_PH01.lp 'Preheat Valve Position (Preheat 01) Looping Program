@@ -1,0 +1,85 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Preheat Valve Control Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Numeric LastError 'Stores last error for later calculation
+Numeric PIDMin, PIDMax 'max and min PID limits
+Numeric PHV_OA_LO 'Outside Air Lockout
+Datetime LastTime 'last time PID was calculated
+Numeric PB 'Proportional Band 
+Numeric IT 'Integration Time 
+Numeric ST 'Stroke Time
+Numeric CI 'Control Interval 
+Numeric DZ 'Dead Zone
+
+Initialize: 'initialize PID parameters
+  PIDMin = 0
+  PIDMax = 1
+  LastError = 0
+  LastTime = Date
+
+  PB = 20 'degrees-F
+  IT = 5 'minutes
+  ST = 180 'seconds
+  CI = 3 'seconds
+  DZ = 1 'degrees-F
+
+  Goto PID_Off
+
+PID_Off: 'turn off PID (maintin last position)
+  PHV_OA_LO = POS2.fct(PH_T, PH_SP, PHV_OA_LODF, 1, 1, PHV_OA_LO, 0)
+  If SAF_RI and not PHV_OA_LO then
+    PHV_PM = 1
+  Else
+    If F_M and not SAF_RI then PHV_PM = 2 Else PHV_PM = 3
+  Endif
+  LastError = 0
+  LastTime = Date
+  PHV_POS = PHV_PID
+  Basedon PHV_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+PID_On: 'allow PID to modulate
+  PHV_OA_LO = POS2.fct(PH_T, PH_SP, PHV_OA_LODF, 1, 1, PHV_OA_LO, 0)
+  If SAF_RI and not PHV_OA_LO then
+    PHV_PM = 1
+  Else
+    If F_M and not SAF_RI then PHV_PM = 2 Else PHV_PM = 3
+  Endif
+  If Date >= LastTime + CI then
+    PHV_PID = PI.fct(PH_T, PH_SP, PB, IT, ST, CI, DZ, PIDMax, PIDMin, 0, LastError, LastTime, PHV_PID, PHV_POS)
+  Endif
+  PHV_POS = PHV_PID
+  Basedon PHV_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+PID_Max: 'send PID to maximum position
+  PHV_OA_LO = POS2.fct(PH_T, PH_SP, PHV_OA_LODF, 1, 1, PHV_OA_LO, 0)
+  If SAF_RI and not PHV_OA_LO then
+    PHV_PM = 1
+  Else
+    If F_M and not SAF_RI then PHV_PM = 2 Else PHV_PM = 3
+  Endif
+  PHV_PID = PIDMax
+  LastError = 0
+  LastTime = Date
+  PHV_POS = PHV_PID
+  Basedon PHV_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+PID_Min: 'send PID to minimum position
+  PHV_OA_LO = POS2.fct(PH_T, PH_SP, PHV_OA_LODF, 1, 1, PHV_OA_LO, 0)
+  If SAF_RI and not PHV_OA_LO then
+    PHV_PM = 1
+  Else
+    If F_M and not SAF_RI then PHV_PM = 2 Else PHV_PM = 3
+  Endif
+  PHV_PID = PIDMin
+  LastError = 0
+  LastTime = Date
+  PHV_POS = PHV_PID
+  Basedon PHV_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+E:
+  If TS > 10 then goto Initialize
