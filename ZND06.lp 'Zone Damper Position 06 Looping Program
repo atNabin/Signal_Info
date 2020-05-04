@@ -1,0 +1,27 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Zone Damper Position
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Numeric Band, CalcPosition, RampFraction
+
+DamperPosition:
+  If ZN##D_HCB <> 0 then Band = 0 Else Band = 1 'prevents division by zero
+  If ZN##_T > ZN##D_SP + ZN##D_HCB / 2 then
+    CalcPosition = 1
+  Else
+    If ZN##_T < ZN##D_SP - ZN##D_HCB / 2 then
+      CalcPosition = 0
+    Else
+      CalcPosition = (ZN##_T - (ZN##D_SP - ZN##D_HCB / 2)) / (ZN##D_HCB + Band)
+    Endif
+  Endif
+  If C_EN then CalcPosition = maximum(CalcPosition, ZN##D_POSC_L)
+
+  ZN##D_POS = RMP.fct(ZN##D_POS, CalcPosition, 1 / ZN##D_ST, RampFraction)
+
+E:
+  If TS > 10 then goto DamperPosition
