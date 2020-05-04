@@ -1,0 +1,22 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  SA Fan Speed Control Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Numeric RampFraction
+
+SpeedReset:
+  SAF_SPDC_DPOS = CURVE4.fct(ZND_HPOS, SAF_SPDC_DPOS[1], SAF_SPD_L, SAF_SPDC_DPOS[2], (1 - SAF_SPD_L) / 3, SAF_SPDC_DPOS[3], (1 - SAF_SPD_L) * 2 / 3, SAF_SPDC_DPOS[4], 1)
+  If C_EN then SAF_SPDC = SAF_SPDC_DPOS Else SAF_SPDC = 0
+
+  SAF_SPDH_DPOS = CURVE4.fct(ZND_LPOS, SAF_SPDH_DPOS[1], 1, SAF_SPDH_DPOS[2], (1 - SAF_SPD_L) * 2 / 3, SAF_SPDH_DPOS[3], (1 - SAF_SPD_L) / 3, SAF_SPDH_DPOS[4], SAF_SPD_L)
+  If H_EN then SAF_SPDH = SAF_SPDH_DPOS Else SAF_SPDH = 0
+
+  SAF_SPD = RMP.fct(SAF_SPD, maximum(SAF_SPDH, SAF_SPDC, SAF_SPD_L) * SAF_RI, SAF_RMP, RampFraction)
+  SAF_FBK_HZ = SAF_FBK * 60
+
+E:
+  If TS > 10 then goto SpeedReset
