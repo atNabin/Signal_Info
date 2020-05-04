@@ -1,0 +1,49 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Effective Occupancy Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Datetime OvrTimeStamp
+
+Occupied:
+  If (not NV_TS_HOL and TS#1_HOL_OP) then Goto HolidayUnoc
+  If TSCH#1 then
+    EFF_OCC = 1
+    EFF_OCC.str = "Occupied"
+  Else
+    Goto Unoccupied
+  Endif
+
+Unoccupied:
+  If (not NV_TS_HOL and TS#1_HOL_OP) then Goto HolidayUnoc
+  If not TSCH#1 then
+    If R_OVR then
+      OvrTimeStamp = Date
+      Goto Bypass
+    Endif
+    EFF_OCC = 2
+    EFF_OCC.str = "Unoccupied"
+  Else
+    Goto Occupied
+  Endif
+
+HolidayUnoc:
+  If (NV_TS_HOL or not TS#1_HOL_OP) then Basedon EFF_OCC Goto Occupied, Unoccupied
+  If R##_OVR then
+    OvrTimeStamp = Date
+    Goto Bypass
+  Endif
+  EFF_OCC = 2
+  EFF_OCC.str = "Holiday"
+
+Bypass:
+  If Date > OvrTimeStamp + (OVR_TMH * 3600) then Goto Unoccupied
+  If TSCH#1 then Goto Occupied
+  EFF_OCC = 3
+  EFF_OCC.str = "Bypass"
+
+E:
+  If TS > 10 then Goto Occupied
