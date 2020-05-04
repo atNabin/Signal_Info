@@ -6,9 +6,10 @@
 'Triggers:  N/A
 '****************************************
 
-Datetime OnTime, OffTime
+Datetime FailStamp, OnTime, OffTime
 
 Initialize:
+  FailStamp = Date
   OnTime = Date
   OffTime = Date
   Goto FanOn
@@ -19,6 +20,12 @@ FanOn:
     OffTime = Date
   Else
     If Date > OffTime + SAF_OF then Goto FanOff
+  Endif
+  If SAF_CMD and not SAF_RI then
+    If Date > FailStamp + 180 then Turn On SAF_F
+  Else
+    FailStamp = Date
+    Turn Off SAF_F
   Endif
   If SAF_CMD then SAF_CMD.str = "Start" Else SAF_CMD.str = "Stop"
 
@@ -33,3 +40,4 @@ FanOff:
 
 E:
   If TS > 10 then goto Initialize
+ 
