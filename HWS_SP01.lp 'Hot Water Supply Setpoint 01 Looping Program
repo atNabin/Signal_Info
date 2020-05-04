@@ -1,0 +1,15 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  HW Supply Setpoint Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+OAResetSetpoint:
+  HWS_SP_OA = CURVE4.fct(NV_OA_T, HWS_SP_OA[1], HWS_SP_OA[2], HWS_SP_OA[3], HWS_SP_OA[4], HWS_SP_OA[5], HWS_SP_OA[6], HWS_SP_OA[7], HWS_SP_OA[8])
+  HWS_SP = minimum(HWS_SP_H, maximum(HWS_SP_OA, HWS_SP_L))
+
+E:
+  If TS > 10 then Goto OAResetSetpoint
+
