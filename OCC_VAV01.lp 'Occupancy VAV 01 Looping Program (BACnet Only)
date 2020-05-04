@@ -1,0 +1,20 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Effective Occupancy Program for VAV Boxes
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Occupied:
+  VAV_OCC_CMD = 1
+  EFF_OCC.str = "Occupied"
+  Basedon EFF_OCC Goto Occupied, Unoccupied
+
+Unoccupied:
+  If SAF_RI then VAV_OCC_CMD = 1 Else VAV_OCC_CMD = 2
+  EFF_OCC.str = "Unoccupied"
+  Basedon EFF_OCC Goto Occupied, Unoccupied
+
+E:
+  If TS > 10 then goto Occupied
