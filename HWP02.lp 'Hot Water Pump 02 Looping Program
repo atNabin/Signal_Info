@@ -1,0 +1,46 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  HW Pump Command Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Datetime FailStamp, OffTime
+
+PumpOn:
+  If HWP#1_MLO then Goto PumpLockout
+  If (HWP#1_STG = 1 and HWP_LD_CL) or (HWP#1_STG = 2 and HWP_LG_CL) then
+    Turn On HWP#1_CMD
+    OffTime = Date
+  Else
+    If Date > OffTime + HWP#1_OF then Goto PumpOff
+  Endif
+  If HWP#1_CMD and not HWP#1_RI then
+    If Date > FailStamp + 180 then Turn On HWP#1_F
+  Else
+    FailStamp = Date
+    Turn Off HWP#1_F
+  Endif
+  HWP#1_MLO.str = "Normal"
+  If HWP#1_CMD then HWP#1_CMD.str = "Start" Else HWP#1_CMD.str = "Stop"
+
+PumpOff:
+  If (HWP#1_STG = 1 and HWP_LD_CL) or (HWP#1_STG = 2 and HWP_LG_CL) then
+    FailStamp = Date
+    Goto PumpOn
+  Else
+    Turn Off HWP#1_CMD
+  Endif
+  If HWP#1_CMD then HWP#1_CMD.str = "Start" Else HWP#1_CMD.str = "Stop"
+  HWP#1_MLO.str = "Normal"
+  If HWP#1_MLO then Goto PumpLockout
+
+PumpLockout:
+  Turn Off HWP#1_CMD
+  HWP#1_MLO.str = "Lockout"
+  If HWP#1_CMD then HWP#1_CMD.str = "Start" Else HWP#1_CMD.str = "Stop"
+  If not HWP#1_MLO then Goto PumpOff
+
+E:
+  If TS > 10 then Goto PumpOff
