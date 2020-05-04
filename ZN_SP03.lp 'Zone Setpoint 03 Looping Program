@@ -1,0 +1,13 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Room Setpoint Calculation
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+SetpointCalc:
+  ZN##_SP = maximum(ZN##_SP_L, minimum(ZN##_SP_H, ZN##_SP_B + ZN##_ADJ))
+
+E:
+  If TS > 10 then Goto SetpointCalc
