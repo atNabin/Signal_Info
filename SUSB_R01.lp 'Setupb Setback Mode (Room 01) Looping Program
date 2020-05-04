@@ -1,0 +1,28 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Setup_Setback Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Numeric SU_M, SB_M
+
+SetupSetback:
+  SB_M = POS2.fct(R#1_T, SB_SP, SB_DF, EFF_OCC = 2, 0, SB_M, 0)
+  SU_M = POS2.fct(R#1_T, SU_SP, SU_DF, EFF_OCC = 2, 1, SU_M, 0)
+  If SB_M then
+    SUSB_M = 2
+    SUSB_M.str = "Setback"
+  Else
+    If SU_M then
+      SUSB_M = 3
+      SUSB_M.str = "Setup"
+    Else
+      SUSB_M = 1
+      SUSB_M.str = "Normal"
+    Endif
+  Endif
+ 
+E:
+  If TS > 10 then goto SetupSetback
