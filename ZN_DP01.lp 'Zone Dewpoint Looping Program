@@ -1,0 +1,25 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Dewpoint Calculation Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Numeric EvalDelay
+Datetime EvalStamp
+
+Initialize:
+  EvalDelay = 3 'seconds
+  EvalStamp = Date
+  Goto DewpointCalc
+
+DewpointCalc:
+  If Date > EvalStamp + EvalDelay then
+    ZN##_DP = DP_CALC.fct(ZN##_T, ZN##_H)
+    EvalStamp = Date
+  Endif
+
+E:
+  If TS > 10 then Goto DewpointCalc
+
