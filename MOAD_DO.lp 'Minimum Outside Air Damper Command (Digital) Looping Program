@@ -1,0 +1,17 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Min OA Damper Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+DamperClose:
+  If MOAD_CMD then MOAD_CMD.str = "Open" Else MOAD_CMD.str = "Close"
+  If EFF_OCC = 2 or not SAF_RI then Turn Off MOAD_CMD Else Goto DamperOpen
+
+DamperOpen:
+  If MOAD_CMD then MOAD_CMD.str = "Open" Else MOAD_CMD.str = "Close"
+  If EFF_OCC <> 2 and SAF_RI then Turn On MOAD_CMD Else Goto DamperClose
+
+E:
+  If TS > 10 then goto DamperClose
