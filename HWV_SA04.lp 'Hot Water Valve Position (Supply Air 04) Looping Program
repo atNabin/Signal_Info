@@ -1,0 +1,90 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  HW Valve Control Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Numeric LastError 'Stores last error for later calculation
+Numeric PIDMin, PIDMax 'max and min PID limits
+Numeric HWRequest 'used to determine if the HW request should be active
+Datetime LastTime 'last time PID was calculated
+Numeric PB 'Proportional Band 
+Numeric IT 'Integration Time 
+Numeric ST 'Stroke Time
+Numeric CI 'Control Interval 
+Numeric DZ 'Dead Zone
+
+Initialize: 'initialize PID parameters
+  PIDMin = 0
+  PIDMax = 1
+  LastError = 0
+  LastTime = Date
+  Goto PID_Off
+
+  PB = 20 'degrees-F
+  IT = 5 'minutes
+  ST = 180 'seconds
+  CI = 3 'seconds
+  DZ = 1 'degrees-F
+
+PID_Off: 'turn off PID (maintain last position)
+  If not HC_M and SAF_RI then
+    HWV_PM = 1
+  Else
+    If F_M and not SAF_RI then HWV_PM = 2 Else HWV_PM = 3
+  Endif
+  LastError = 0
+  LastTime = Date
+  HWV_POS = HWV_PID
+  Basedon HWV_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+PID_On: 'allow PID to modulate
+  If not HC_M and SAF_RI then
+    HWV_PM = 1
+  Else
+    If F_M and not SAF_RI then HWV_PM = 2 Else HWV_PM = 3
+  Endif
+  If Date >= LastTime + CI then
+    HWV_PID = PI.fct(SA_T, SA_SPH, PB, IT, ST, CI, DZ, PIDMax, PIDMin, 0, LastError, LastTime, HWV_PID, HWV_POS)
+    HWRequest = POS2.fct(HWV_PID, 50%, 90%, 1, 1, HWRequest, 0)
+    If HWRequest then Turn HW_REQ On Else Turn HW_REQ Off
+  Endif
+  HWV_POS = HWV_PID
+  Basedon HWV_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+PID_Max: 'send PID to maximum position
+  If not HC_M and SAF_RI then
+    HWV_PM = 1
+  Else
+    If F_M and not SAF_RI then HWV_PM = 2 Else HWV_PM = 3
+  Endif
+  HWV_PID = PIDMax
+  LastError = 0
+  LastTime = Date
+  HWV_POS = HWV_PID
+  Turn HW_REQ Off
+  Basedon HWV_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+PID_Min: 'send PID to minimum position
+  If not HC_M and SAF_RI then
+    HWV_PM = 1
+  Else
+    If F_M and not SAF_RI then HWV_PM = 2 Else HWV_PM = 3
+  Endif
+  HWV_PID = PIDMin
+  LastError = 0
+  LastTime = Date
+  HWV_POS = HWV_PID
+  Turn HW_REQ Off
+  Basedon HWV_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+E:
+  If TS > 10 then Goto Initialize
+
+
+
+
+
+
