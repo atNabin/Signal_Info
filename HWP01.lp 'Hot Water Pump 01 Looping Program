@@ -1,0 +1,41 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  HW Pump Command Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Datetime FailStamp, OffTime
+
+Initialize:
+  FailStamp = Date
+  OffTime = Date
+  Goto PumpOn
+
+PumpOn:
+  If H_M or F_M then
+    Turn On HWP#1_CMD
+    OffTime = Date
+  Else
+    If Date > OffTime + HWP#1_OF then Goto PumpOff
+  Endif
+  If HWP#1_CMD and not HWP#1_RI then
+    If Date > FailStamp + 180 then Turn On HWP#1_F
+  Else
+    FailStamp = Date
+    Turn Off HWP#1_F
+  Endif
+  If HWP#1_CMD then HWP#1_CMD.str = "Start" Else HWP#1_CMD.str = "Stop"
+
+PumpOff:
+  If H_M or F_M then
+    FailStamp = Date
+    Goto PumpOn
+  Else
+    Turn Off HWP#1_CMD
+  Endif
+  If HWP#1_CMD then HWP#1_CMD.str = "Start" Else HWP#1_CMD.str = "Stop"
+
+E:
+  Goto PumpOn
