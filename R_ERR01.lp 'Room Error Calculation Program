@@ -1,0 +1,14 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Room Error Calculation Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+ErrorCalc:
+  R_SP_ERR = R#1_T - R_SP
+
+E:
+  If TS > 10 then Goto ErrorCalc
+
