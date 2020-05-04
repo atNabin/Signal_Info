@@ -1,0 +1,18 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Wet Bulb Temperature Calculation
+'****************************************
+
+Arg 1 Temp 'Temperature (deg-F)
+Arg 2 Hum 'Relative Humidity (%)
+
+Numeric Temp_c, DP_T_c, DP_T, E, WB_T_c, WB_T
+
+Temp_c = (Temp - 32) / 1.8 'Outside Temperature (deg-C)
+DP_T_c = ((Temp_c - (14.55 + 0.114 * Temp_c) * (1 - (0.01 * Hum)) - ((2.5 + 0.007 * Temp_c) * (1 - (0.01 * Hum))) ^ 3 - (15.9 + 0.117 * Temp_c) * (1 - (0.01 * Hum)) ^ 14))
+DP_T = DP_T_c * 1.8 + 32 'Dew Point Temperature (deg-F)
+E = (6.11 * 10 ^ (7.5 * DP_T / (237.7 + DP_T)))
+
+WB_T_c = (((0.6501) * Temp_c) + ((4098 * E) / ((DP_T_c + 237.7) ^ 2) * DP_T_c)) / ((0.6501) + (4098 * E) / ((DP_T_c + 237.7) ^ 2))
+WB_T = WB_T_c * 1.8 + 32 'Wet Bulb Temperature (deg-F)
