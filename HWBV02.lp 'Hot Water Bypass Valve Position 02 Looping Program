@@ -1,0 +1,58 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  HW Bypass Valve Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Numeric LastError 'Stores last error for later calculation
+Numeric PIDMin, PIDMax 'max and min PID limits
+Datetime LastTime 'last time PID was calculated
+
+Initialize: 'initialize PID parameters
+  PIDMin = 0
+  PIDMax = 1
+  LastError = 0
+  LastTime = Date
+  Basedon HWBV_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+PID_Off: 'turn off PID (maintain last position)
+  If HWP#1_RI and H_M then HWBV_PM = 1 Else HWBV_PM = 3
+  HWBV_HWS_SP = HWS_SP - HWBV_HWS_OFS
+  HWBV_POS = HWBV_PID
+  LastError = 0
+  LastTime = Date
+  Basedon HWBV_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+PID_On: 'allow PID to modulate
+  If HWP#1_RI and H_M then HWBV_PM = 1 Else HWBV_PM = 3
+  HWBV_HWS_SP = HWS_SP - HWBV_HWS_OFS
+  If Date >= LastTime + HWBV_CI then
+    HWBV_PID = PI.fct(HWS_T, HWS_SP, HWBV_PB, HWBV_IT, HWBV_ST, HWBV_CI, HWBV_DZ, PIDMax, PIDMin, 1, LastError, LastTime, HWBV_PID, HWBV_POS)
+  Endif
+  HWBV_POS = HWBV_PID
+  Basedon HWBV_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+PID_Max: 'send PID to maximum position
+  If HWP#1_RI and H_M then HWBV_PM = 1 Else HWBV_PM = 3
+  HWBV_HWS_SP = HWS_SP - HWBV_HWS_OFS
+  HWBV_PID = PIDMax
+  HWBV_POS = HWBV_PID
+  LastError = 0
+  LastTime = Date
+  Basedon HWBV_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+PID_Min: 'send PID to minimum position
+  If HWP#1_RI and H_M then HWBV_PM = 1 Else HWBV_PM = 3
+  HWBV_HWS_SP = HWS_SP - HWBV_HWS_OFS
+  HWBV_PID = PIDMin
+  HWBV_POS = HWBV_PID
+  LastError = 0
+  LastTime = Date
+  Basedon HWBV_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+E:
+  LastError = 0
+  LastTime = Date
+  Basedon HWBV_PM Goto PID_On, PID_Max, PID_Min, PID_Off
