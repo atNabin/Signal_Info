@@ -1,0 +1,47 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Supply Air Fan Enable Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Numeric EnableDelay
+Datetime EnableStamp, FailStamp
+
+Initialize:
+  EnableDelay = 30 'seconds
+  Goto FanOff
+
+FanOn:
+  If UNIT_EN and OAD_CMD then
+    If Date > EnableStamp + EnableDelay then
+      Turn SAF_CMD On
+      FailStamp = Date
+    Endif
+  Else
+    Goto FanOff
+  Endif
+  If SAF_CMD then SAF_CMD.str = "Start" Else SAF_CMD.str = "Stop"
+
+  If SAF_CMD and not SAF_RI then
+    If Date > FailStamp + 180 then Turn SAF_F On
+  Else
+    Turn SAF_F Off
+  Endif
+
+FanOff:
+  If UNIT_EN and OAD_CMD then
+    EnableStamp = Date
+    Goto FanOn
+  Else
+    Turn SAF_CMD Off
+    Turn SAF_F Off
+  Endif
+  If SAF_CMD then SAF_CMD.str = "Start" Else SAF_CMD.str = "Stop"
+
+E:
+  If TS > 10 then Goto Initialize
+
+
+
