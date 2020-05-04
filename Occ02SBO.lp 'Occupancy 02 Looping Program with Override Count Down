@@ -1,0 +1,47 @@
+''Description: Occupancy Program
+'Flow Type: Looping
+'Triggers: none
+'This program manages the unit's occupancy signal and allows occupancy overrides via the RmOvr signal
+'Version 1.0
+
+
+Numeric Input TsOcc, nvRtRst, RmOvr, OvrTmh, fbkOccRt, fbkOvrRt
+Numeric Output EffOcc, OccRt, OvrRt, OvrTmRem
+
+Datetime OvrTimeStamp
+
+Occupied:
+ If EffOcc = 1 Then OccRt = (fbkOccRt + scan/3600)
+ If EffOcc = 3 Then OvrRt = (fbkOvrRt + scan/3600)
+ If nvRtRst then OccRt and OvrRt = 0
+  If not TsOcc then
+    EffOcc = 1
+  Else
+    Goto Unoccupied
+  Endif
+
+Unoccupied:
+ If EffOcc = 1 Then OccRt = (fbkOccRt + scan/3600)
+ If EffOcc = 3 Then OvrRt = (fbkOvrRt + scan/3600)
+ If nvRtRst then OccRt and OvrRt = 0
+  If TsOcc then
+    If RmOvr then
+      OvrTimeStamp = Date
+      Goto Bypass
+    Endif
+    EffOcc = 2
+  Else
+    Goto Occupied
+  Endif
+
+Bypass:
+ If EffOcc = 1 Then OccRt = (fbkOccRt + scan/3600)
+ If EffOcc = 3 Then OvrRt = (fbkOvrRt + scan/3600)
+ If nvRtRst then OccRt and OvrRt = 0
+OvrTmRem = (OvrTimeStamp +(OvrTmh * 3600)) - Date
+  If Date > OvrTimeStamp + (OvrTmh * 3600) then Goto Unoccupied
+  If TsOcc then Goto Occupied
+  EffOcc = 3
+ 
+E:
+  If TS > 30 then Goto Occupied
