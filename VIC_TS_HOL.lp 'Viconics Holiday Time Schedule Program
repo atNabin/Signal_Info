@@ -1,0 +1,11 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Viconics Time Schedule Holiday Program
+'****************************************
+
+HolidayOn:
+  If not NV_TS_HOL and TS#1_HOL_OP Then Turn Off TSCHED#1
+
+E: 
+  If TS > 10 Then Goto HolidayOn
