@@ -1,0 +1,32 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Unit Enable Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Datetime EnableStamp
+
+Initialize:
+'Un-comment this line for random Unit Delay On generation
+  'UNIT_ON = random((Scan * Second * Freemem) Mod 32767) Mod 600 'Set UNIT_ON in seconds
+  Goto UnitEnable
+
+UnitEnable:
+  If (EFF_OCC = 2 and SUSB_M = 1) or NV_UNIT_LO then Goto UnitDisable
+  Turn UNIT_EN On
+
+UnitDisable:
+  If not NV_UNIT_LO and (EFF_OCC = 3 or SUSB_M <> 1) then Goto UnitEnable
+  If EFF_OCC = 1 and not NV_UNIT_LO then
+    EnableStamp = Date
+    Goto UnitDelay
+  Endif
+  Turn UNIT_EN Off
+
+UnitDelay:
+  If Date > EnableStamp + UNIT_ON then Goto UnitEnable
+
+E:
+  If TS > 10 then Goto UnitEnable
