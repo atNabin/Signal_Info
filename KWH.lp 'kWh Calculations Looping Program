@@ -1,0 +1,82 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  kW Calculation Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Numeric i 'array index
+Numeric PulseCount 'Number of pulses for each scan
+Numeric PulseLength[2] 'Stores time between pulses
+Numeric LastPulseCount 'Stores number of total pulses
+Numeric LastDay, LastMonth 'stores the last day and month
+Numeric TempKW, SumTempKW[10] 'temporary values for KW_CURRENT claculation
+Datetime LastCalcTime 'Time of last calculation
+Datetime LastScanTime
+
+Initialize:
+  PulseLength[1] = 3600 'assume 1 hour since last pulse
+  PulseLength[2] = 0
+  KW_INST = 0
+  For i = 1 to 10   'reset the current kW calculation
+    SumTempKW[i] = 0
+  Next i
+  SumTempKW = 0
+  TempKW = 0
+  LastCalcTime = Date
+  LastPulseCount = KWH_PUL
+  LastDay = Weekday
+  LastMonth = Month
+  Goto kW_Calculation
+
+kW_Calculation:
+'Calculate the number of pulses since the last scan
+  PulseCount = (KWH_PUL - LastPulseCount) * KWH_FACTOR
+  LastPulseCount = KWH_PUL
+
+  If PulseCount > 0 then
+    KWH_DAY = KWH_DAY + PulseCount 'increment daily kWh
+    KWH_MONTH = KWH_MONTH + PulseCount 'increment monthly kWh
+    TempKW = TempKW + PulseCount 'increment temporary kW
+    PulseLength[1] = PulseLength[2] + Scan
+    PulseLength[2] = 0 'reset temporary pulse timer
+    KW_INST = PulseCount / (PulseLength[1] / 3600) 'instantaneous kW calculation
+  Else
+    PulseLength[2] = PulseLength[2] + Scan 'time since last pulse
+    If PulseLength[2] > PulseLength[1] then KW_INST = KWH_FACTOR / (PulseLength[2] / 3600)
+  Endif
+
+'Reset values at beginning of each new day and each new month
+  If LastDay <> Weekday then
+    KWH_DAY = 0
+    KW_DAY = 0
+  Endif
+  LastDay = Weekday
+  If LastMonth <> Month then
+    KWH_MONTH = 0
+    KW_MONTH = 0
+  Endif
+  LastMonth = Month
+  KWH_DAY[Weekday] = KWH_DAY 'sets current day's kWh
+  KWH_MONTH[Month] = KWH_MONTH 'sets current month's kWh
+
+  If (Date - LastCalcTime) > (KWH_INTERVAL * 60 / 10) then
+    For i = 10 to 2   'shift each element of the array by 1
+      SumTempKW[i] = SumTempKW[i - 1]
+    Next i
+    SumTempKW[1] = TempKW
+    TempKW = 0 'Reset temporary kW value
+    LastCalcTime = Date
+  Endif
+
+  KW_CURRENT = sum(SumTempKW) * 60 / KWH_INTERVAL
+  KW_DAY = maximum(KW_CURRENT, KW_DAY)
+  KW_DAY[Weekday] = KW_DAY
+  KW_MONTH = maximum(KW_CURRENT, KW_MONTH)
+  KW_MONTH[Month] = KW_MONTH
+
+  LastScanTime = Date
+
+E:
+  If TS > 3 then Goto kW_Calculation
