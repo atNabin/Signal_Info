@@ -1,0 +1,68 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  HW Valve Control Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Numeric LastError 'Stores last error for later calculation
+Numeric PIDMin, PIDMax 'max and min PID limits
+Datetime LastTime 'last time PID was calculated
+
+Initialize: 'initialize PID parameters
+  PIDMin = 0
+  PIDMax = 1
+  LastError = 0
+  LastTime = Date
+  Goto PID_Off
+
+PID_Off: 'turn off PID (maintin last position)
+  If not HC_M and SAF_RI then
+    RHV_PM = 1
+  Else
+    If F_M and not SAF_RI then RHV_PM = 2 Else RHV_PM = 3
+  Endif
+  LastError = 0
+  LastTime = Date
+  RHV_POS = RHV_PID
+  Basedon RHV_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+PID_On: 'allow PID to modulate
+  If not HC_M and SAF_RI then
+    RHV_PM = 1
+  Else
+    If F_M and not SAF_RI then RHV_PM = 2 Else RHV_PM = 3
+  Endif
+  If Date >= LastTime + RHV_CI then
+    RHV_PID = PI.fct(R_T, R_SPH, RHV_PB, RHV_IT, RHV_ST, RHV_CI, RHV_DZ, PIDMax, PIDMin, 0, LastError, LastTime, RHV_PID, RHV_POS)
+  Endif
+  RHV_POS = RHV_PID
+  Basedon RHV_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+PID_Max: 'send PID to maximum position
+  If not HC_M and SAF_RI then
+    RHV_PM = 1
+  Else
+    If F_M and not SAF_RI then RHV_PM = 2 Else RHV_PM = 3
+  Endif
+  RHV_PID = PIDMax
+  LastError = 0
+  LastTime = Date
+  RHV_POS = RHV_PID
+  Basedon RHV_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+PID_Min: 'send PID to minimum position
+  If not HC_M and SAF_RI then
+    RHV_PM = 1
+  Else
+    If F_M and not SAF_RI then RHV_PM = 2 Else RHV_PM = 3
+  Endif
+  RHV_PID = PIDMin
+  LastError = 0
+  LastTime = Date
+  RHV_POS = RHV_PID
+  Basedon RHV_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+E:
+  If TS > 10 then goto Initialize
