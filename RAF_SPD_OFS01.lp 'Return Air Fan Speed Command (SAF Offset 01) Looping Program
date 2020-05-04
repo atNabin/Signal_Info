@@ -1,0 +1,15 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  RA Fan Speed Control Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+RAF_Speed:
+  RAF_SPD = (maximum(RAF_SPD_L, (SAF_SPD - RAF_OFS))) * RAF_RI
+  RAF_FBK_HZ = RAF_FBK * 60
+
+E:
+  If TS > 10 then Goto RAF_Speed
+ 
