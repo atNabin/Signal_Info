@@ -1,0 +1,22 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Cold Deck Setpoint Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+HotDeckSetpoint:
+  If HD_SP_OP then
+    HD_SP_OA = CURVE4.fct(NV_OA_T, HD_SP_OA[1], HD_SP_OA[2], HD_SP_OA[3], HD_SP_OA[4], HD_SP_OA[5], HD_SP_OA[6], HD_SP_OA[7], HD_SP_OA[8])
+    HD_OFS_ERRH = CURVE4.fct(ZN_SPH_LERR, HD_OFS_ERRH[1], HD_OFS_ERRH[2], HD_OFS_ERRH[3], HD_OFS_ERRH[4], HD_OFS_ERRH[5], HD_OFS_ERRH[6], HD_OFS_ERRH[7], HD_OFS_ERRH[8])
+    HD_SP_RST = HD_SP_OA + HD_OFS_ERRH
+    HD_SP = minimum(HD_SP_RST, HD_SP_H)
+    HD_SP_OP.str = "Auto"
+  Else
+    HD_SP = minimum(HD_SP_MAN, HD_SP_H)
+    HD_SP_OP.str = "Manual"
+  Endif
+
+E:
+  Goto HotDeckSetpoint
