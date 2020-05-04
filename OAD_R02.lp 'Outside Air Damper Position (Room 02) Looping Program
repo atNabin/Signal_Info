@@ -1,0 +1,79 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  OA Damper Control Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Numeric LastError 'Stores last error for later calculation
+Numeric PIDMin, PIDMax 'max and min PID limits
+Numeric Status, OldStatus 'status flags for PID mode
+Numeric OAD_OAT_EN, OAD_RA_EN, OAD_ENTH_EN
+Datetime LastTime 'last time PID was calculated
+
+Initialize: 'initialize PID parameters
+  PIDMin = 0
+  PIDMax = 1
+  LastError = 0
+  LastTime = Date
+  Goto PID_Off
+
+PID_Off: 'turn off PID (maintain last position)
+  OA_ENTH = ENTH.fct(NV_OA_T, NV_OA_H)
+  OAD_OAT_EN = POS2.fct(NV_OA_T, OAD_OAT_LOSP, OAD_OAT_LODF, 1, 1, OAD_OAT_EN, 0)
+  OAD_ENTH_EN = POS2.fct(OA_ENTH, OAD_ENTH_LOSP, OAD_ENTH_LODF, 1, 0, OAD_ENTH_EN, 0)
+  OAD_RA_EN = POS2.fct(NV_OA_T, RA_T, OAD_OAT_LODF, 1, 0, OAD_RA_EN, 0)
+  If SAF_RI and HC_M and OAD_OAT_EN and OAD_RA_EN and OAD_ENTH_EN then OAD_PM = 1 Else OAD_PM = 3
+  OAD_R_SP = R_SPC - OAD_R_OFS
+  OAD_POS_MA = CURVE2.fct(MA_T, OAD_POS_MA[1], OAD_POS_MA[2], OAD_POS_MA[3], OAD_POS_MA[4])
+  OAD_POS = minimum(OAD_POS_MA, OAD_PID)
+  LastError = 0
+  LastTime = Date
+  Basedon OAD_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+PID_On: 'allow PID to modulate
+  OA_ENTH = ENTH.fct(NV_OA_T, NV_OA_H)
+  OAD_OAT_EN = POS2.fct(NV_OA_T, OAD_OAT_LOSP, OAD_OAT_LODF, 1, 1, OAD_OAT_EN, 0)
+  OAD_ENTH_EN = POS2.fct(OA_ENTH, OAD_ENTH_LOSP, OAD_ENTH_LODF, 1, 0, OAD_ENTH_EN, 0)
+  OAD_RA_EN = POS2.fct(NV_OA_T, RA_T, OAD_OAT_LODF, 1, 0, OAD_RA_EN, 0)
+  If SAF_RI and HC_M and OAD_OAT_EN and OAD_RA_EN and OAD_ENTH_EN then OAD_PM = 1 Else OAD_PM = 3
+  OAD_R_SP = R_SPC - OAD_R_OFS
+  If Date >= LastTime + OAD_CI then
+    OAD_PID = PI.fct(R_T, OAD_R_SP, OAD_PB, OAD_IT, OAD_ST, OAD_CI, OAD_DZ, PIDMax, PIDMin, 1, LastError, LastTime, OAD_PID, OAD_POS)
+  Endif
+  OAD_POS_MA = CURVE2.fct(MA_T, OAD_POS_MA[1], OAD_POS_MA[2], OAD_POS_MA[3], OAD_POS_MA[4])
+  OAD_POS = minimum(OAD_POS_MA, OAD_PID)
+  Basedon OAD_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+PID_Max: 'send PID to maximum position
+  OA_ENTH = ENTH.fct(NV_OA_T, NV_OA_H)
+  OAD_OAT_EN = POS2.fct(NV_OA_T, OAD_OAT_LOSP, OAD_OAT_LODF, 1, 1, OAD_OAT_EN, 0)
+  OAD_ENTH_EN = POS2.fct(OA_ENTH, OAD_ENTH_LOSP, OAD_ENTH_LODF, 1, 0, OAD_ENTH_EN, 0)
+  OAD_RA_EN = POS2.fct(NV_OA_T, RA_T, OAD_OAT_LODF, 1, 0, OAD_RA_EN, 0)
+  If SAF_RI and HC_M and OAD_OAT_EN and OAD_RA_EN and OAD_ENTH_EN then OAD_PM = 1 Else OAD_PM = 3
+  OAD_R_SP = R_SPC - OAD_R_OFS
+  OAD_PID = PIDMax
+  OAD_POS_MA = CURVE2.fct(MA_T, OAD_POS_MA[1], OAD_POS_MA[2], OAD_POS_MA[3], OAD_POS_MA[4])
+  OAD_POS = minimum(OAD_POS_MA, OAD_PID)
+  LastError = 0
+  LastTime = Date
+  Basedon OAD_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+PID_Min: 'send PID to minimum position
+  OA_ENTH = ENTH.fct(NV_OA_T, NV_OA_H)
+  OAD_OAT_EN = POS2.fct(NV_OA_T, OAD_OAT_LOSP, OAD_OAT_LODF, 1, 1, OAD_OAT_EN, 0)
+  OAD_ENTH_EN = POS2.fct(OA_ENTH, OAD_ENTH_LOSP, OAD_ENTH_LODF, 1, 0, OAD_ENTH_EN, 0)
+  OAD_RA_EN = POS2.fct(NV_OA_T, RA_T, OAD_OAT_LODF, 1, 0, OAD_RA_EN, 0)
+  If SAF_RI and HC_M and OAD_OAT_EN and OAD_RA_EN and OAD_ENTH_EN then OAD_PM = 1 Else OAD_PM = 3
+  OAD_R_SP = R_SPC - OAD_R_OFS
+  OAD_PID = PIDMin
+  OAD_POS_MA = CURVE2.fct(MA_T, OAD_POS_MA[1], OAD_POS_MA[2], OAD_POS_MA[3], OAD_POS_MA[4])
+  OAD_POS = minimum(OAD_POS_MA, OAD_PID)
+  LastError = 0
+  LastTime = Date
+  Basedon OAD_PM Goto PID_On, PID_Max, PID_Min, PID_Off
+
+E:
+  If TS > 10 then goto Initialize
+ 
