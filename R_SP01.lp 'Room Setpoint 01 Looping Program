@@ -1,0 +1,16 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Room Setpoint Calculation
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Numeric SPC_TEMP, SPH_TEMP
+
+SetpointCalc:
+  R#1_SP = SP_CALC.fct(R_ADJ, R_SPC_B, R_SPH_B, R_SPC_L, R_SPH_H, R_SP_DFL, R_SPC, R_SPH, HC_M, SPC_TEMP, SPH_TEMP)
+
+E:
+  If TS > 10 then Goto SetpointCalc
+ 
