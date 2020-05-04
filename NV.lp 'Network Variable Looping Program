@@ -1,0 +1,39 @@
+'****************************************
+'Author:
+'Date:
+'Description: Network Variable Program
+'Flow Type: Looping
+'****************************************
+
+Numeric i
+
+UpdateMe:
+Goto UpdateMe
+
+Wait:
+i = 0 'Reset error detection
+If TS >= 10 then Goto Get_Cont1
+
+Get_Cont1:
+If i < 1 then
+i = 1
+'Add code here
+Endif
+Goto Get_Cont2
+
+Get_Cont2:
+If i < 2 then
+i = 2
+'Add code here
+Endif
+Goto Get_Cont3
+
+Get_Cont3:
+If i < 3 then
+i = 3
+'Add code here
+Endif
+Goto Wait
+
+E:
+If TS > 10 Then Goto Get_Cont1
