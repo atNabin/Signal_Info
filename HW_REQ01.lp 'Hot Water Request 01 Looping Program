@@ -1,0 +1,10 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  HW Request Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+HW_Request:
+  HW_REQ = HYST.fct(HWV_POS, 0.99, 0.01, SAF_RI and HWV_PM = 1, HW_REQ)
