@@ -1,0 +1,12 @@
+'**************************************** 
+'Description:  Run Time Calculator 
+'Flow Type:  Looping  
+'****************************************
+
+'Replace with generated or hand written code
+
+ReplaceMe:
+Goto ReplaceMe
+
+E:
+  If TS > 10 then goto ReplaceMe
