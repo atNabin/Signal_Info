@@ -1,0 +1,46 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  PI Control Function
+'****************************************
+
+Arg 1 CV 'Control Variable
+Arg 2 SP 'Setpoint
+Arg 3 PB 'Proportional Band
+Arg 4 IT 'Integration Time
+Arg 5 ST 'Stroke Time
+Arg 6 CI 'Control Interval
+Arg 7 DZ 'Dead Zone
+Arg 8 UMax 'Maximum PID position
+Arg 9 UMin 'Minimum PID position
+Arg 10 ACT 'PID Action 0 = Reverse, 1 = Direct
+Arg 11 LErr 'Last known error
+Arg 12 LTime 'Delay Time between calculations
+Arg 13 U 'Last PID Value
+Arg 14 FB 'Feedback
+Arg 15 FL 'Failure Limit (optional; default=320 for thermistor failure)
+
+Numeric E1 'Current Error
+Numeric Du 'Desired change in output
+Numeric G 'Gain
+Numeric DuMax 'Maximum Change
+
+E1 = SP - CV 'Error Calculation
+G = (ACT = 0) * (UMax - UMin) / PB + (ACT = 1) * (UMin - UMax) / PB
+DuMax = (UMax - UMin) * (Date - LTime) / ST
+Du = ((DZ / 2) < abs(E1)) * minimum(DuMax, maximum(-DuMax, G * (E1 - LErr + (Date - LTime) * E1 / IT / 60)))
+U = maximum(UMin, minimum(UMax, FB + Du))
+
+If passed(Arg[15]) then
+  If abs(CV) > FL then U = UMin
+Else
+  If abs(CV) > 320 then U = UMin
+Endif
+
+LErr = E1 'Save Current error into the last error
+LTime = Date 'Save the current time into the last time
+
+Return U
+
+
+ 
