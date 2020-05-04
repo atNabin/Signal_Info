@@ -1,0 +1,23 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  SA Cooling Setpoint Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+CoolSetpoint:
+  If SA_SPC_OP then
+    SA_SPC_OA = CURVE4.fct(NV_OA_T, SA_SPC_OA[1], SA_SPC_OA[2], SA_SPC_OA[3], SA_SPC_OA[4], SA_SPC_OA[5], SA_SPC_OA[6], SA_SPC_OA[7], SA_SPC_OA[8])
+    SA_SPC = maximum(SA_SPC_OA, SA_SPC_L)
+    SA_SPC_OP.str = "Auto"
+  Else
+    SA_SPC = maximum(SA_SPC_MAN, SA_SPC_L)
+    SA_SPC_OP.str = "Manual"
+  Endif
+
+E:
+  If TS > 10 then Goto CoolSetpoint
+
+
+ 
