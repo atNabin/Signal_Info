@@ -1,0 +1,69 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Zone Setpoint Error Calculation Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Object ZoneTemps[25] 'Object array of Zone Temperatures
+Object HeatSPs[25] 'Object array of Heating Setpoints
+Object CoolSPs[25] 'Object array of Cooling Setpoints
+
+Object ZoneTemp 'Temperature object
+Object ZoneTempObj
+Object HeatSP 'Heating Setpoint object
+Object CoolSP 'Cooling Setpoint object
+
+Numeric index 'loop counter
+Numeric count 'counts number of zones
+Numeric ZoneHeatError[25]
+Numeric ZoneCoolError[25]
+
+Populate:
+  count = 0
+  index = 1
+  If OpenList("input", ZoneTemp) is Success then Goto TempConfig
+
+TempConfig: 'assign all setpoints and zone temps to objects
+  If GetObject(ZoneTemp) is Success then
+    ZoneTempObj = getname(ZoneTemp Name)
+
+    If right(ZoneTemp Name, 2) = "_T" and left(ZoneTemp Name, 2) = "ZN" then
+      count = count + 1
+      ZoneTemps[count] = ZoneTempObj
+      HeatSP = getname(left(ZoneTemp Name, 4) ; "_SPH")
+      HeatSPs[count] = HeatSP
+      CoolSP = getname(left(ZoneTemp Name, 4) ; "_SPC")
+      CoolSPs[count] = CoolSP
+    Endif
+  Else
+    CloseList(ZoneTemp)
+    Goto FillArray
+  Endif
+  Goto TempConfig
+
+FillArray: 'Fills the empty arrays so they will not be taken into account during calculation
+  For index = count + 1 to 25  
+    ZoneHeatError[index] = 999
+    ZoneCoolError[index] = -999
+  Next index
+  index = 1
+  Goto ErrorCalc
+
+ErrorCalc: 'Calculate the setpoint errors
+  If index > count then index = 1
+  ZoneTemp = ZoneTemps[index]
+  CoolSP = CoolSPs[index]
+  HeatSP = HeatSPs[index]
+
+  ZoneHeatError[index] = ZoneTemp Value - HeatSP Value
+  ZoneCoolError[index] = ZoneTemp Value - CoolSP Value
+
+  ZN_SPH_LERR = minimum(ZoneHeatError)
+  ZN_SPC_HERR = maximum(ZoneCoolError)
+
+  index = index + 1
+
+E:
+  If TS > 10 then goto Populate
