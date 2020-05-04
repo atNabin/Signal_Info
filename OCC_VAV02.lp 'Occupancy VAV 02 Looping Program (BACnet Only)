@@ -1,0 +1,33 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Effective Occupancy Program for VAV Boxes
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Datetime OvrEndTime
+
+Occupied:
+  VAV_OCC_CMD = 1
+  EFF_OCC.str = "Occupied"
+  Basedon EFF_OCC Goto Occupied, Unoccupied, Bypass
+
+Unoccupied:
+  If SAF_RI then VAV_OCC_CMD = 1 Else VAV_OCC_CMD = 2
+  If ANY_OVR then
+    OvrEndTime = Date + OVR_TMH * 3600
+    EFF_OCC = 3
+  Else
+    EFF_OCC.str = "Unoccupied"
+  Endif
+  Basedon EFF_OCC Goto Occupied, Unoccupied, Bypass
+
+Bypass:
+  VAV_OCC_CMD = 1
+  EFF_OCC.str = "Bypass"
+  If Date > OvrEndTime then EFF_OCC = 2
+  Basedon EFF_OCC Goto Occupied, Unoccupied, Bypass
+
+E:
+  If TS > 10 then goto Occupied
