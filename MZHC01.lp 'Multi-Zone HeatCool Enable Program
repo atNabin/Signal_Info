@@ -1,0 +1,14 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Multi-Zone HeatCool Enable Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+HeatCoolEna:
+  H_EN = POS2.fct(ZN_SPH_LERR, H_ERRH_SP, H_ERRH_DF, SAF_RI, 0, H_EN, 0)
+  C_EN = POS2.fct(ZN_SPC_HERR, C_ERRC_SP, C_ERRC_DF, SAF_RI, 1, C_EN, 0)
+
+E:
+  If TS > 10 then goto HeatCoolEna
