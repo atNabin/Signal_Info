@@ -1,0 +1,41 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Primary CHW Pump Command Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Datetime FailStamp, OffTime
+
+PumpOn:
+  If CHWR_LO then Goto PumpOff
+  If (SCHWP#1_RI or SCHWP#2_RI) and (C_M or F_M) then
+    Turn On PCHWP#1_CMD
+    OffTime = Date
+  Else
+    If Date > OffTime + PCHWP#1_OF then Goto PumpOff
+  Endif
+  If PCHWP#1_CMD and not PCHWP#1_RI then
+    If Date > FailStamp + 180 then Turn On PCHWP#1_F
+  Else
+    FailStamp = Date
+    Turn Off PCHWP#1_F
+  Endif
+  If PCHWP#1_CMD then PCHWP#1_CMD.str = "Start" Else PCHWP#1_CMD.str = "Stop"
+
+PumpOff:
+  If PCHWP#1_CMD then PCHWP#1_CMD.str = "Start" Else PCHWP#1_CMD.str = "Stop"
+  If CHWR_LO then
+    Turn Off PCHWP#1_CMD
+    Goto PumpOff
+  Endif
+  If (SCHWP#1_RI or SCHWP#2_RI) and (C_M or F_M) then
+    FailStamp = Date
+    Goto PumpOn
+  Else
+    Turn Off PCHWP#1_CMD
+  Endif
+
+E:
+  If TS > 10 then Goto PumpOn
