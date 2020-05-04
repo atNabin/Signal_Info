@@ -1,0 +1,42 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Steam Valve Bump Control Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Numeric LastError, PIDMin, PIDMax, STMV_BMP_DZ, STMV_BMP_CI
+Datetime LastTime
+
+Initialize:
+  STMV_BMP_DZ = 0.75
+  STMV_BMP_CI = 30
+  PIDMin = 0
+  PIDMax = 1
+  LastError = 0
+  LastTime = Date
+  Goto BMP_Calc
+
+BMP_Calc:
+  If H_M and ANY_HWP_RI then
+    STMV_BMP_M = 1
+    If Date >= LastTime + STMV_BMP_CI then
+      If HWS_T < (HWS_SP + STMV_BMP_DZ / 2) then If HWS_T < (HWS_SP + STMV_BMP_DZ * 2.5) then STMV_BMP = STMV_BMP + 0.005 Else If HWS_T < (HWS_SP + STMV_BMP_DZ * 5) then STMV_BMP = STMV_BMP + 0.01 Else STMV_BMP = STMV_BMP + 0.02
+      If HWS_T > (HWS_SP - STMV_BMP_DZ / 2) then If HWS_T > (HWS_SP - STMV_BMP_DZ * 2.5) then STMV_BMP = STMV_BMP - 0.005 Else If HWS_T > (HWS_SP - STMV_BMP_DZ * 5) then STMV_BMP = STMV_BMP - 0.01 Else STMV_BMP = STMV_BMP - 0.02
+      STMV_BMP = minimum(PIDMax, maximum(PIDMin, STMV_BMP))
+      LastTime = Date
+    Endif
+  Else
+    STMV_BMP_M = 3
+    STMV_BMP = PIDMin
+    LastError = 0
+    LastTime = Date
+  Endif
+
+  STMV#1_POS = CURVE4.fct(STMV_BMP, 0, 0, 0.33, 1, 0.66, 0, 1, 1)
+  STMV#2_POS = CURVE4.fct(STMV_BMP, 0, 0, 0.33, 0, 0.66, 1, 1, 1)
+
+E:
+  If TS > 10 then Goto Initialize
+
