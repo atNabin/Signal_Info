@@ -1,0 +1,18 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Effective Occupancy Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Occupied:
+  EFF_OCC.str = "Occupied"
+  Basedon EFF_OCC Goto Occupied, Unoccupied
+
+Unoccupied:
+  EFF_OCC.str = "Unoccupied"
+  Basedon EFF_OCC Goto Occupied, Unoccupied
+
+E:
+  If TS > 10 then goto Occupied
