@@ -1,0 +1,20 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  HW Pump Lead/Lag Call Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Numeric HWPumps
+
+LeadLagCall:
+  HWP_LD_CL = H_M or F_M
+  HWP_SPD_LGDIS = maximum(HWP#1_SPD_L + HWP#2_SPD_L, HWP_SPD_LGDIS)
+  HWP_LG_CL = HYST.fct(HWP_PID, HWP_SPD_LGEN, HWP_SPD_LGDIS, HWP_LD_CL, HWP_LG_CL)
+  HWPumps = LDLG.fct(HWP_LD_CL, HWP_LG_CL, HWP#1_RI, HWP#2_RI, HWP#1_F, HWP#2_F, HWP#1_STG, HWP#2_STG, HWP#1_RT, HWP#2_RT, HWP#1_MLO, HWP#2_MLO, HWP_LDLG_EN, HWP_LDLG_MAN)
+
+  If HWP#1_RI or HWP#2_RI then turn on ANY_HWP_RI else turn off ANY_HWP_RI
+
+E:
+  If TS > 10 then Goto LeadLagCall
