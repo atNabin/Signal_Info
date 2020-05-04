@@ -1,0 +1,29 @@
+'****************************************
+'Author:       
+'Date:          
+'Description:  Optimized Start Program
+'Flow Type:  Looping
+'****************************************
+
+Numeric OccStatus, OccValue, StartCorrection, StartTime, OpData[7], TodayOpCorr, NextOpCorr, Mode, Setpoint
+
+Wait:
+  If TS > 1 then Goto OpStart
+
+OpStart:
+'Determine our current Mode and Setpoint based on ZN#1_T
+  Mode = (1 * (ZN#1_T > 74)) + (0 * (ZN#1_T < 69)) + (Mode * not (ZN#1_T > 74) * not (ZN#1_T < 69))
+  Setpoint = 69 * not Mode + 74 * Mode
+
+  OccStatus = OptSS.fct(NV_OA_T, ZN#1_T, Setpoint, ZN#1_OCC_TM, ZN#1_UNOCC_TM, (1 * (ZN#1_MAXOP_TMM > 0)) + (0 * (ZN#1_MAXOP_TMM = 0)), OpData, ZN#1_MAXOP_TMM)
+
+  OccValue = OpData[1] ' OccValue will equal the Effective Occupancy but needs to be converted to TAC standards
+  NextOpCorr = OpData[4] ' NextOpCorr will be the number of minutes earlier or later to start on next day
+  TodayOpCorr = OpData[5] ' TodayOpCorr will be the number of minutes earlier or later to start on this day
+  If OccValue = 0 then Turn TSCHED#1 Off ' If OccValue = 0 then set to Unoccupied Mode
+  If OccValue = 1 or OccValue = 2 then Turn TSCHED#1 On ' If OccValue = 1 then set to Optimized Start Mode
+
+  Goto Wait
+
+E:
+  If TS > 10 then Goto Wait
