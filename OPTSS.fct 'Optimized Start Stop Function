@@ -1,0 +1,150 @@
+'RETURNS OPTIMIZED START STOP
+
+Arg 1 OATemp '     Outside Air Temp
+Arg 2 RmTemp '     Room Temp
+Arg 3 RmTempStpt ' Room Temp SetpoInt (Occupied)
+Arg 4 OccpTm '     Scheduled Occupancy Time (DateTime Variable)
+Arg 5 UnOccpTm '   Scheduled UnOccupied Time (DateTime Variable)
+Arg 6 FctnTask '   Function Task
+'                     0 = Scheduled Start - Scheduled Stop
+'                     1 = Optimized Start - Scheduled Stop
+'                     2 = Optimized Start - Optimized Stop
+Arg 7 OpDat '      Argument Data Storage (Returned/Stored)
+'                   [1] = Status (0=UnOcc 1=EarlyStrt 2=Occ 3=EarlyStop)
+'                   [2] = CalcuLation mode (0=UnOcc 1=OpStrt 2=Occ 3=OpStop)
+'                   [3] = Room Temp At BegInnIng Of OpStrt And OpStop
+'                   [4] = Early Start Correction Minutes
+'                   [5] = Early Start Total Minutes
+'                   [6] = Early Stop Correction Minutes
+'                   [7] = Early Stop Total Minutes
+
+Arg 8 MaxStrMn 'Maximum Early Start Time In Minutes - 0 = Scheduled Start
+
+Numeric MaxStpMn
+Numeric OpStrMn
+Numeric OpStpMn
+Numeric RmTempErr
+Numeric TempDrft
+Numeric LossRate
+Numeric CalcMode
+
+' ------------------------------------------------------------------------
+' SETUP - Initialize Local Numerics - Identify Constants
+' ------------------------------------------------------------------------
+'MaxStrMn = 240 ' Maximum Early Start Time In Minutes - Cannot Be <= To 60
+MaxStpMn = 60 '  Maximum Early Stop Time In Minutes
+TempDrft = 1 '   Allowable/Target Room Temp Drift After Optimum Stop -
+'                Cannot Be Equal To 0
+
+CalcMode = OpDat[1]
+RmTempErr = abs(RmTemp - RmTempStpt)
+
+' ------------------------------------------------------------------------
+' FUNCTION TASK = ?   Safeguard Against ON Time Later Than OFF Time
+' ------------------------------------------------------------------------
+If (OccpTm >= UnOccpTm) then
+  OpDat[1] and OpDat[2] = 0
+  Return (0) ' Stop equipment
+Endif
+
+' ------------------------------------------------------------------------
+' FUNCTION TASK = 0   Scheduled ON/OFF Only
+' ------------------------------------------------------------------------
+If (FctnTask = 0) then
+  If Date is between OccpTm and (UnOccpTm - 60) then
+    OpDat[1] and OpDat[2] = 2
+    Return (1)
+  Else
+    OpDat[1], OpDat[2], OpDat[3], OpDat[4], OpDat[5], OpDat[6] and OpDat[7] = 0
+    Return (0)
+  Endif
+Endif
+
+' ------------------------------------------------------------------------
+' FUNCTION TASK Does Not = 0   Optimized Start
+' ------------------------------------------------------------------------
+' SettIng Status - (UnOccupied, EarlyStart, Occupied, EarlyStop)
+' ------------------------------------------------------------------------
+OpDat[1] = (1 * ((OpDat[1] = 1) and (Date < OccpTm))) + (2 * ((OpDat[1] <> 3) and (Date is between OccpTm and (UnOccpTm - 60)))) + (3 * ((OpDat[1] = 3) and (Date < (UnOccpTm - 60))))
+
+' ------------------------------------------------------------------------
+' CalcMode = 0  (UnOccupied) Evaluating Optimized Start Time
+' ------------------------------------------------------------------------
+If (CalcMode = 0) then
+  If ((Date is between (OccpTm - (MaxStrMn * 60)) and OccpTm) or ((Date > OccpTm) and (Date < (UnOccpTm - (MaxStpMn * 60))))) then
+    LossRate = (((abs(OATemp - 60)) * ((MaxStrMn - 60) / 55)) * (-1 * (MaxStrMn < 60)) + 60) / 15
+    OpStrMn and OpDat[5] = maximum((minimum(((LossRate * RmTempErr) + OpDat[4]), MaxStrMn)), 0)
+    If (Date >= OccpTm - (OpStrMn * 60)) then
+      CalcMode, OpDat and OpDat[1] = 1
+      OpDat[3] = RmTemp
+      Return (1)
+    Endif
+  Endif
+Endif
+
+' ------------------------------------------------------------------------
+' CalcMode = 1  (Optimized Start) Equipment Started Prior To Occp - Waiting
+'    For Room Temp To Reach Occp Setpoint - Adjusting Next Start Time.
+' ------------------------------------------------------------------------
+If (CalcMode = 1) then
+  If (RmTempErr < 0.5) or (Date >= (UnOccpTm - maximum((MaxStpMn * 60 * (FctnTask = 2)), 120))) then
+    CalcMode and OpDat[1] = 2
+    If ((abs(RmTemp - OpDat[3]) < 1) and (RmTempErr > 0.5)) then Return (1)
+    OpDat[4] = OpDat[4] + maximum(minimum(((Date - OccpTm) / 60), 10), -10)
+    OpDat[4] = maximum(minimum(OpDat[4], MaxStrMn), -MaxStrMn)
+    Return (1)
+  Endif
+Endif
+
+' ------------------------------------------------------------------------
+' FUNCTION TASK = 2   Optimized Start And Optimized Stop
+' ------------------------------------------------------------------------
+' CalcMode = 2  (Occupied) Evaluating Optimized Stop Time
+' ------------------------------------------------------------------------
+If (FctnTask = 2) then
+  If (CalcMode = 2) then
+    If ((Date >= (UnOccpTm - (MaxStpMn * 60))) and (RmTempErr < 0.5)) then
+      LossRate = (((abs(OATemp - 60)) * ((MaxStpMn - 0) / 55)) + 0) / TempDrft
+      OpStpMn and OpDat[7] = maximum((minimum(((MaxStpMn - LossRate) + OpDat[5]), MaxStpMn)), 2)
+      If (Date >= UnOccpTm - (OpStpMn * 60)) then
+        CalcMode, OpDat and OpDat[2] = 3
+        Return (0)
+      Endif
+    Endif
+  Endif
+
+' ------------------------------------------------------------------------
+' CalcMode = 3  (Optimized Stop) Equipment Stopped Prior To UnOccupancy -
+'    Waiting For Room Temp To Drift To Allowable Value (TempDrft) or Time
+'    To Exceed UnOccupancy Time.
+' ------------------------------------------------------------------------
+  If (CalcMode = 3) then
+    If (RmTempErr >= TempDrft) then
+      CalcMode and OpDat[2] = 0
+      OpDat[6] = maximum((OpDat[6] + maximum(((Date - UnOccpTm) / 60), -10)), -MaxStpMn)
+      Return (0)
+    Endif
+    If Date >= (UnOccpTm - 60) then
+      CalcMode and OpDat[1] = 0
+      If ((abs(OpDat[7] - MaxStpMn) < 2) or (RmTemp = RmTempStpt)) then Return (0)
+      OpDat[6] = minimum((OpDat[6] + minimum(((OpDat[7] / (RmTempErr / TempDrft)) - OpDat[7]), 5)), MaxStpMn)
+      Return (0)
+    Endif
+  Endif
+Else
+  OpDat[6] and OpDat[7] = 0
+Endif
+
+' ------------------------------------------------------------------------
+' CalcMode = 1, 2 or 3   CheckIng for UnOccupied Time
+' ------------------------------------------------------------------------
+If Date >= (UnOccpTm - 60) then
+  CalcMode and OpDat[2] = 0
+  Return (0)
+Endif
+
+' ------------------------------------------------------------------------
+' When Logic Does Not Alter Current Status Then Return Old Status
+' ------------------------------------------------------------------------
+Return (((CalcMode = 1) or (CalcMode = 2)))
+
