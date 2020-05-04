@@ -1,0 +1,107 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  VAV Setpoint Error Calculation Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Object VAVTemps[50] 'Object array of VAV Temperatures
+Object VAVSPs[50] 'Object array of Setpoints
+Object VAVModes[50] 'Object array of VAV Modes
+Object VAVOccs[50] 'Object array of VAV Occupancies
+
+Object VAVTemp 'Temperature object
+Object VAVTempObj
+Object VAVSP 'Heating Setpoint object
+Object VAVMode 'Cooling Setpoint object
+Object VAVOcc
+
+String VAVNum
+
+Numeric index 'loop counter
+Numeric count 'counts number of VAVs
+Numeric VAVHeatError[50]
+Numeric VAVCoolError[50]
+Numeric VAVRooms[50]
+Numeric VAVOccHighTemps[50]
+Numeric VAVOccLowTemps[50]
+Numeric OccCalc[50]
+
+Populate:
+  count = 0
+  index = 1
+  If OpenList("numeric", VAVTemp) is Success then Goto TempConfig
+
+TempConfig: 'assign all setpoints and VAV temps to objects
+  If GetObject(VAVTemp) is Success then
+    VAVTempObj = getname(VAVTemp Name)
+
+    If right(left(VAVTemp Name, 6), 3) = "R_T" then 'must be in format NV_R_T_VAV##
+      VAVNum = right(VAVTemp Name, 5)
+      count = count + 1
+      VAVTemps[count] = VAVTempObj
+      VAVSP = getname("NV_R_SP_" ; VAVNum) 'must be in format NV_R_SP_VAV##
+      VAVSPs[count] = VAVSP
+      VAVMode = getname("NV_USTAT_" ; VAVNum) 'must be in format NV_USTAT_VAV##
+      VAVModes[count] = VAVMode
+      VAVOcc = getname("NV_OCC_" ; VAVNum) 'must be in format NV_OCC_VAV##
+      VAVOccs[count] = VAVOcc
+    Endif
+  Else
+    CloseList(VAVTemp)
+    Goto FillArray
+  Endif
+  Goto TempConfig
+
+FillArray: 'Fills the empty arrays so they will not be taken into account during calculation
+  For index = count + 1 to 25  
+    VAVHeatError[index] = 999
+    VAVCoolError[index] = -999
+    OccCalc[index] = 0
+  Next index
+  index = 1
+  Goto DataMgmt
+
+DataMgmt: 'Calculate the setpoint errors
+  If index > count then index = 1
+  VAVTemp = VAVTemps[index]
+  VAVSP = VAVSPs[index]
+  VAVMode = VAVModes[index]
+  VAVOcc = VAVOccs[index]
+
+  If VAVMode Value = 1 or VAVMode Value = 2 then 'Heating VAVModes
+    VAVHeatError[index] = VAVTemp Value - VAVSP Value
+    VAVCoolError[index] = -999
+  Else
+    If VAVMode Value = 3 then
+      VAVHeatError[index] = 999
+      VAVCoolError[index] = VAVTemp Value - VAVSP Value
+    Else
+      VAVHeatError[index] = 999
+      VAVCoolError[index] = -999
+    Endif
+  Endif
+
+  If VAVOcc Value = 3 then OccCalc[index] = 3 Else OccCalc[index] = 0
+  If VAVOcc Value <> 2 then
+    VAVOccHighTemps[index] = VAVTemp Value
+    VAVOccLowTemps[index] = VAVTemp Value
+  Else
+    VAVOccHighTemps[index] = -999
+    VAVOccLowTemps[index] = 999
+  Endif
+
+  If maximum(OccCalc) = 3 then Turn On ANY_OVR Else Turn Off ANY_OVR
+  R_HT = maximum(VAVRooms)
+  R_HT_OCC = maximum(VAVOccHighTemps)
+  R_LT = minimum(VAVRooms)
+  R_LT_OCC = minimum(VAVOccLowTemps)
+  R_AT = average(VAVRooms)
+  SPH_LERR = minimum(VAVHeatError)
+  SPC_HERR = maximum(VAVCoolError)
+
+  index = index + 1
+
+E:
+  If TS > 10 then goto Populate
