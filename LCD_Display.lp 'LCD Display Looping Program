@@ -1,0 +1,254 @@
+'************************************
+'Author: Greg Bouzianis
+'Date: September 9th, 2008
+'Description: LCD Display Program w/ Calibration Mode
+'************************************
+
+Numeric DisplayCount, Toggle, LastLine, ScrollTime
+Numeric Hour12, Digit1, Digit2, Digit3, Digit4
+Numeric EnterCount, TempLoCount, TempHiCount, PassStat
+Numeric Multiplier, Divisor, SelectCount, AdjustVal, CalLine, DispSeg
+Datetime PassTimeOut
+Object DisplayValue
+
+Initialize:
+  DispSeg = 1
+  ScrollTime = 5
+  Goto NormView
+
+NormView: 'Disps the current room temperature
+  DisplayCount = 0
+  LCDDisplay[2] = 11 'Disp the format ###.#
+'Disp the degree symbol and the current mode icon (HEAT/COOL)
+  LCDDisplay[7] = 1024 + (UnitStatus = 3) * 8192 + (UnitStatus = 1) * 4096
+  LCDDisplay[1] = RoomTemp 'Set the room temp to be Displayed
+  LastLine = 1
+  If LCDDisplay[8] = 0 then Goto NormView Else Basedon LCDDisplay[8] Goto Ovrd, Up, SelButton, Disp, Down, NoFunc, Password
+
+Ovrd:
+  If OccpncyStatus <> 2 then LCDDisplay[8] = 0 'This button has no function unless the space is Unoccupied.
+  If OccpncyStatus = 3 then
+    LCDDisplay[2] = 3
+    LCDDisplay[3] = 8
+    LCDDisplay[4] = 8
+    LCDDisplay[5] = 8
+    LCDDisplay[6] = 8
+    LCDDisplay[7] = 1 + 2 + 3 + 8 + 64 + 128 + 256 + 512 + 1024 + 2048 + 4096 + 8192 + 16384
+    If TS < 2 then Goto Ovrd
+  Endif
+  Basedon LastLine Goto NormView, DispOA, DispRmStpt, DispTime
+
+Up:
+  LCDDisplay[8] = 0 'Clear the button latch
+  If PassStat is Off then
+    RoomStptAdj = minimum(RoomStptAdj + 0.1, 2) 'increase the setpoint (limit at +2 degF)
+    Goto DispRmStpt
+  Else
+    AdjustVal = DisplayValue Value + 10 ^ (3 - SelectCount)
+    If AdjustVal is between 0 and 9999 then DisplayValue Value = AdjustVal
+    Basedon CalLine Goto DispFlowStpt, DispFlow, SetCalVal
+  Endif
+  Basedon LastLine Goto NormView, DispOA, DispRmStpt, DispTime
+
+Disp:
+  DisplayCount = DisplayCount + 1
+  If DisplayCount > 4 then DisplayCount = 0
+  LCDDisplay[8] = 0
+  Basedon DisplayCount Goto DispOA, DispRmStpt, DispTime, NormView
+
+Down:
+  LCDDisplay[8] = 0 'Clear the button latch
+  If PassStat is Off then
+    RoomStptAdj = maximum(RoomStptAdj - 0.1, -2) 'decrease the setpoint (limit at -2 degF)
+    Goto DispRmStpt
+  Else
+    AdjustVal = DisplayValue Value - 10 ^ (3 - SelectCount)
+    If AdjustVal is between 0 and 9999 then DisplayValue Value = AdjustVal
+    Basedon CalLine Goto DispFlowStpt, DispFlow, SetCalVal
+  Endif
+  Basedon LastLine Goto NormView, DispOA, DispRmStpt, DispTime
+
+SelButton:
+  LCDDisplay[8] = 0 'Clear the button latch
+  LCDDisplay[7] = 0
+  LCDDisplay[2] = 3
+  LCDDisplay[6] = 10
+  LCDDisplay[5] = 10
+  LCDDisplay[4] = 10
+  If Toggle then
+    LCDDisplay[3] = 0
+    Turn Off Toggle
+  Else
+    LCDDisplay[3] = 1
+    Turn On Toggle
+  Endif
+  Goto Delay
+
+Delay:
+  If LCDDisplay[8] <> 0 then Basedon LCDDisplay[8] Goto Ovrd, Up, SelButton, Disp, Down, NoFunc, Password
+  If TS > 1 then Basedon LastLine Goto NormView, DispOA, DispRmStpt, DispTime
+
+NoFunc: 'No function for pressed button in this mode.
+  LCDDisplay[8] = 0
+  If PassStat then
+    Basedon CalLine Goto DispFlowStpt, DispFlow, SetCalVal
+  Else
+    Basedon LastLine Goto NormView, DispOA, DispRmStpt, DispTime
+  Endif
+
+DispOA:
+  LastLine = 2
+  LCDDisplay[2] = 11 'Disp the format ###.#
+  LCDDisplay[7] = 2 + 1024 'Disp the degree icon and OA icon
+  LCDDisplay[1] = OutsideTemp 'Disp the Outside Air Temperature
+  If LCDDisplay[8] = 6 then Goto NormView
+  If TS > ScrollTime and Toggle then Goto NormView 'leave current Display up for specified time
+  If LCDDisplay[8] = 0 then Goto DispOA Else Basedon LCDDisplay[8] Goto Ovrd, Up, SelButton, Disp, Down, NoFunc, Password
+
+DispRmStpt:
+  LastLine = 3
+  LCDDisplay[2] = 11 'Disp the format ###.#
+  LCDDisplay[7] = 1024 + 2048 'Disp the degree symbol and setpoint icon  
+  LCDDisplay[1] = RoomStpt 'Disp the Room Setpoint
+  If LCDDisplay[8] = 6 then Goto NormView
+  If TS > ScrollTime and Toggle then Goto NormView 'leave current Display up for specified time
+  If LCDDisplay[8] = 0 then Goto DispRmStpt Else Basedon LCDDisplay[8] Goto Ovrd, Up, SelButton, Disp, Down, NoFunc, Password
+
+DispTime:
+  LastLine = 4
+  LCDDisplay[7] = 0 'Clear all Disp icons
+  LCDDisplay[2] = 3
+
+  If TS Mod 2 = 1 then LCDDisplay[7] = 8 Else LCDDisplay[7] = 0
+  If Hour > 11 then
+    Hour12 = Hour - 12
+    If Hour12 = 0 then Hour12 = 12
+    LCDDisplay[7] = LCDDisplay[7] + 256
+  Else
+    Hour12 = Hour
+    If Hour12 = 0 then Hour12 = 12
+  Endif
+  If Hour12 > 9 then
+    Digit1 = 1
+    Digit2 = Hour12 - 10
+  Else
+    Digit1 = 10
+    Digit2 = Hour12
+  Endif
+  If Minute > 9 then
+    Digit3 = Minute / 10
+    Digit4 = Minute Mod 10
+  Else
+    Digit3 = 0
+    Digit4 = Minute
+  Endif
+  LCDDisplay[6] = Digit1
+  LCDDisplay[5] = Digit2
+  LCDDisplay[4] = Digit3
+  LCDDisplay[3] = Digit4
+  If LCDDisplay[8] = 6 then Goto NormView
+  If TS > ScrollTime and Toggle then Goto NormView 'leave current Display up for specified time
+  If LCDDisplay[8] = 0 then Goto DispTime Else Basedon LCDDisplay[8] Goto Ovrd, Up, SelButton, Disp, Down, NoFunc, Password
+
+Enter: 'Used to enter password and to calibrate VAV
+  LCDDisplay[8] = 0
+  EnterCount = EnterCount + 1
+  If EnterCount = 1 then
+    DisplayValue = MinFlow
+    Goto DispFlowStpt
+  Endif
+  If EnterCount = 2 then
+    AirflowStpt = MinFlow
+    Goto DispFlow
+  Endif
+  If EnterCount = 3 then
+    TempLoCount = ((Airflow / (PickupFactor * DuctArea)) ^ 2) / (2 / 1023)
+    DisplayValue = CalLoCount
+    Goto SetCalVal
+  Endif
+  If EnterCount = 4 then
+    CalLoPress = (CalLoCount / (PickupFactor * DuctArea)) ^ 2
+    CalLoCount = TempLoCount
+    DisplayValue = MaxFlow
+    Goto DispFlowStpt
+  Endif
+  If EnterCount = 5 then
+    AirflowStpt = MaxFlow
+    Goto DispFlow
+  Endif
+  If EnterCount = 6 then
+    TempHiCount = ((Airflow / (PickupFactor * DuctArea)) ^ 2) / (2 / 1023)
+    DisplayValue = CalHiCount
+    Goto SetCalVal
+  Endif
+  If EnterCount > 6 then
+    CalHiPress = (CalHiCount / (PickupFactor * DuctArea)) ^ 2
+    CalHiCount = TempHiCount
+    Goto Calib
+  Endif
+  Goto Password
+
+Password:
+  LCDDisplay[8] = 0 'Clear the button latch
+  PassTimeOut = Date + 1800 'Length of time before password expires
+  If PassStat is On then
+    Turn Off PassStat 'Turn off the password status
+    ApplicationMode = 32 'Return to normal mode
+    SelectCount = 0
+    EnterCount = 0
+  Else
+    Turn On PassStat 'Turn on the password status
+    SelectCount = 0
+    EnterCount = 0
+    ApplicationMode = 15 'Got into Calib Mode
+    Goto Enter
+  Endif
+  If LCDDisplay[8] = 0 then Goto NormView Else Basedon LCDDisplay[8] Goto Ovrd, Up, NoFunc, Disp, Down, NoFunc, Password
+
+SetCalVal:
+  CalLine = 3
+  If DispSeg = 1 then DispSeg = 0 Else DispSeg = 1
+  If Date > PassTimeOut then Goto Password
+  LastLine = 7
+  LCDDisplay[2] = 3 'Seg Disp
+  LCDDisplay[7] = 16384 + 2048 'Disp the CFM and Setpoint icons  LCDDisplay[1] = CalLoCount[1]
+  If (SelectCount = 0 and DispSeg = 1) or SelectCount <> 0 then LCDDisplay[6] = DisplayValue Value / 1000 Else LCDDisplay[6] = 10
+  If (SelectCount = 1 and DispSeg = 1) or SelectCount <> 1 then LCDDisplay[5] = (DisplayValue Value Mod 1000) / 100 Else LCDDisplay[5] = 10
+  If (SelectCount = 2 and DispSeg = 1) or SelectCount <> 2 then LCDDisplay[4] = (DisplayValue Value Mod 100) / 10 Else LCDDisplay[4] = 10
+  If (SelectCount = 3 and DispSeg = 1) or SelectCount <> 3 then LCDDisplay[3] = DisplayValue Value Mod 10 Else LCDDisplay[3] = 10
+  If LCDDisplay[8] = 3 then SelectCount = (SelectCount + 1) Mod 4
+  If LCDDisplay[8] = 0 then Goto SetCalVal Else Basedon LCDDisplay[8] Goto NoFunc, Up, NoFunc, NoFunc, Down, Enter, Password
+
+Calib:
+  EnterCount = 0
+  Multiplier = (CalHiPress - CalLoPress) * 10
+  Divisor = ((CalHiCount - CalLoCount) * 2 / 1023) * 10
+  If Divisor = 0 then GainPress = 1 Else GainPress = Multiplier / Divisor
+  Goto Password
+
+DispFlowStpt:
+  CalLine = 1
+  If DispSeg = 1 then DispSeg = 0 Else DispSeg = 1
+  If Date > PassTimeOut then Goto Password
+  LastLine = 5
+  LCDDisplay[2] = 3 ' Seg Disp
+  LCDDisplay[7] = 16384 + 2048 'Disp the CFM and Setpoint icons
+  If (SelectCount = 0 and DispSeg = 1) or SelectCount <> 0 then LCDDisplay[6] = DisplayValue Value / 1000 Else LCDDisplay[6] = 10
+  If (SelectCount = 1 and DispSeg = 1) or SelectCount <> 1 then LCDDisplay[5] = (DisplayValue Value Mod 1000) / 100 Else LCDDisplay[5] = 10
+  If (SelectCount = 2 and DispSeg = 1) or SelectCount <> 2 then LCDDisplay[4] = (DisplayValue Value Mod 100) / 10 Else LCDDisplay[4] = 10
+  If (SelectCount = 3 and DispSeg = 1) or SelectCount <> 3 then LCDDisplay[3] = DisplayValue Value Mod 10 Else LCDDisplay[3] = 10
+  If LCDDisplay[8] = 3 then SelectCount = (SelectCount + 1) Mod 4
+  If LCDDisplay[8] = 0 then Goto DispFlowStpt Else Basedon LCDDisplay[8] Goto NoFunc, Up, NoFunc, NoFunc, Down, Enter, Password
+
+DispFlow:
+  CalLine = 2
+  If Date > PassTimeOut then Goto Password
+  LastLine = 6
+  LCDDisplay[2] = 1 '#### Disp
+  LCDDisplay[7] = 16384 'Disp the CFM and Setpoint icons
+  LCDDisplay[1] = Airflow
+  If LCDDisplay[8] = 3 then SelectCount = 0
+  If LCDDisplay[8] = 0 then Goto DispFlow Else Basedon LCDDisplay[8] Goto NoFunc, Up, NoFunc, NoFunc, Down, Enter, Password
+
+E:
+  Basedon LastLine Goto NormView, DispOA, DispRmStpt, DispTime
