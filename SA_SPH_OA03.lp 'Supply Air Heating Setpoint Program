@@ -1,0 +1,30 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Supply Air Heating Setpoint Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Numeric SA_SPH_OA[8]
+
+Initialize:
+  SA_SPH_OA[1] = 45 'all values deg-F
+  SA_SPH_OA[2] = 75
+  SA_SPH_OA[3] = 55
+  SA_SPH_OA[4] = 75
+  SA_SPH_OA[5] = 65
+  SA_SPH_OA[6] = 65
+  SA_SPH_OA[7] = 75
+  SA_SPH_OA[8] = 65
+  Goto HeatSetpoint
+
+HeatSetpoint:
+  SA_SPH_OA = CURVE4.fct(NV_OA_T, SA_SPH_OA[1], SA_SPH_OA[2], SA_SPH_OA[3], SA_SPH_OA[4], SA_SPH_OA[5], SA_SPH_OA[6], SA_SPH_OA[7], SA_SPH_OA[8])
+  SA_SPH = SA_SPH_OA
+
+E:
+  If TS > 10 then Goto Initialize
+
+
+
