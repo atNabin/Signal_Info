@@ -1,0 +1,14 @@
+'************************************
+'Author: Greg Bouzianis
+'Date: September 9th, 2008
+'Description: LCD Button Latch Program
+'************************************
+
+LCDButtonLatch:
+  If LCDDisplay = 1 then LCDDisplay[8] = 1 'Override
+  If LCDDisplay = 2 then LCDDisplay[8] = 2 'Up Arrow
+  If LCDDisplay = 3 then LCDDisplay[8] = 3 'Select
+  If LCDDisplay = 4 then LCDDisplay[8] = 4 'Display
+  If LCDDisplay = 5 then LCDDisplay[8] = 5 'Down Arrow
+  If LCDDisplay = 6 then LCDDisplay[8] = 6 'Enter
+  If LCDDisplay = 7 then LCDDisplay[8] = 7 'Password
