@@ -1,0 +1,249 @@
+'**************************************** 
+'Author:  Jeff Morton 
+'Updated:  09/2/2009 
+'Description:  xP Display Override Menu Program
+'Flow Type:  Looping 
+'Supports two lines of description for _OVR_REQ points.
+'Characters 1-16 are on line 2, 17-32 on line 3.
+'Note: Never have more than one _OVR_REQ point for a single zone.
+'Note: Need to have consecutively numbered zones starting with 01 for direct entry to be intuitive.
+'**************************************** 
+
+Object ZN_OVR[25] 'Array of all Zone Override target objects
+Object ZN_EFF_OCC[25] 'Array of all Zone Effective Occupancy objects
+Object ZN_T[25] 'Array of all Zone Temperature objects
+Object Override, EffOcc, ZoneTemp 'Temporary objects
+Numeric NumZones, CurrentIndex, ErrRecover, MenuScrolling, NumBuilder
+Datetime LastPress
+
+Initialize:
+  ACCLCDDispMode = 0
+  ACCLCDBacklight = 120 'Initially turn display on for 2 min
+  ACCLCDDispLine1 = ""
+  ACCLCDDispLine2 = "    Loading..."
+  ACCLCDDispLine3 = ""
+  ACCLCDDispLine4 = ""
+  CurrentIndex = 1
+  MenuScrolling = On
+  NumZones = 0
+  NumBuilder = 0
+  If OpenList("numeric", Override) is Success then Goto LoadOverrides
+  ACCLCDDispLine2 = " Error loading."
+
+LoadOverrides:
+  If GetObject(Override) is Success then
+    If right(Override Name, 8) = "_OVR_REQ" then
+      NumZones = NumZones + 1
+      ZN_OVR[NumZones] = getname(Override Name)
+'     ACCLCDDispLine2 = Override Name 'For Debugging
+    Endif
+  Else
+    CloseList(Override)
+    ErrRecover = 1
+    Goto ProcessTemps
+  Endif
+
+ProcessTemps:
+' ACCLCDDispLine2 = "     Temps"
+  If ErrRecover = 1 then
+    ErrRecover = 2 'ZN##_T does not exist
+    ZN_T[CurrentIndex] = getname(left(ZN_OVR[CurrentIndex], 4) ; "_T")
+  Else
+    If ErrRecover = 2 then
+      ErrRecover = 3 'ZN##_T and NV_ZN##_T do not exist
+      ZN_T[CurrentIndex] = getname("NV_" ; left(ZN_OVR[CurrentIndex], 4) ; "_T")
+    Endif
+  Endif
+  CurrentIndex = CurrentIndex + 1
+  ErrRecover = 1
+  If CurrentIndex > NumZones then
+    CurrentIndex = 1
+    ErrRecover = 4
+    Goto ProcessEffOcc
+  Endif
+
+ProcessEffOcc:
+' ACCLCDDispLine2 = "   EFF_OCC"
+  If ErrRecover = 4 then
+    ErrRecover = 5 'ZN##_EFF_OCC does not exist
+    ZN_EFF_OCC[CurrentIndex] = getname(left(ZN_OVR[CurrentIndex], 4) ; "_EFF_OCC")
+  Else
+    If ErrRecover = 5 then
+      ErrRecover = 6 'ZN##_EFF_OCC and NV_ZN##_EFF_OCC do not exist
+      ZN_EFF_OCC[CurrentIndex] = getname("NV_" ; left(ZN_OVR[CurrentIndex], 4) ; "_EFF_OCC")
+    Endif
+  Endif
+  CurrentIndex = CurrentIndex + 1
+  ErrRecover = 4
+  If CurrentIndex > NumZones then
+    CurrentIndex = 1
+    ErrRecover = 7
+    Goto MenuScroll
+  Endif
+
+MenuScroll:
+  If MenuScrolling then
+    ACCLCDKeyStroke = 0 'Empty input buffer
+    If CurrentIndex < 1 then CurrentIndex = NumZones 'insure we're in range
+    If CurrentIndex > NumZones then CurrentIndex = 1
+    Override = ZN_OVR[CurrentIndex] 'Set reference object
+    MenuScrolling = Off
+  Endif
+  ACCLCDDispLine1 = "Zone " ; right(left(Override Name, 4), 2)
+  ACCLCDDispLine2 = Override Description
+  If length(Override Description) <= 16 then
+    ACCLCDDispLine3 = "________________"
+  Else
+    ACCLCDDispLine3 = "" ; right(Override Description, length(Override Description) - 16) 'Second zone description line
+  Endif
+  ACCLCDDispLine4 = "(exit)    (open)"
+  If ACCLCDBacklight = Off then Goto IdleState
+  If ACCLCDKeyStroke <> 0 then MenuScrolling = On
+  If (ACCLCDKeyStroke > 0) and (ACCLCDKeyStroke <= 10) then Goto ManualZoneEntry
+  If ACCLCDKeyStroke = 17 or ACCLCDKeyStroke = 15 then Goto IdleState 'F1 button
+  If ACCLCDKeyStroke = 19 or ACCLCDKeyStroke = 16 then Goto ZoneInfo 'F3 button
+  If ACCLCDKeyStroke = 13 then 'UP button
+    CurrentIndex = CurrentIndex - 1
+    Goto ResetTS
+  Else
+    If ACCLCDKeyStroke = 14 then 'DOWN button
+      CurrentIndex = CurrentIndex + 1
+      Goto ResetTS
+    Endif
+  Endif
+
+ResetTS:
+  Goto MenuScroll
+
+ZoneInfo:
+  If MenuScrolling then
+    ACCLCDKeyStroke = 0 'Empty input buffer
+    EffOcc = ZN_EFF_OCC[CurrentIndex] 'Set EffOcc reference
+    ZoneTemp = ZN_T[CurrentIndex] 'Set Zone Temp reference
+    MenuScrolling = Off
+  Endif
+  ACCLCDDispLine1 = "Zone " ; right(left(Override Name, 4), 2)
+  ACCLCDDispLine2 = "Temp.= " ; ZoneTemp Value
+  If EffOcc Value = 1 then ACCLCDDispLine3 = "State:Occupied"
+  If EffOcc Value = 3 then ACCLCDDispLine3 = "State:Override"
+  If ACCLCDKeyStroke <> 0 then MenuScrolling = On
+  If EffOcc Value = 2 then
+    ACCLCDDispLine3 = "State:Unoccupied"
+    ACCLCDDispLine4 = "(back)     (OVR)"
+    If ACCLCDKeyStroke = 19 then Goto OverrideCMD 'F3 button
+  Else
+    ACCLCDDispLine4 = "(back)" 'Override not available
+  Endif
+  If ACCLCDBacklight = Off then Goto IdleState
+  If ACCLCDKeyStroke = 17 or ACCLCDKeyStroke = 15 then Goto MenuScroll 'F1 Button
+  If (ACCLCDKeyStroke > 0) and (ACCLCDKeyStroke <= 10) then Goto ManualZoneEntry
+
+OverrideCMD:
+  If TS < 15 then
+    Turn On Override
+  Else
+    Turn Off Override
+    Goto ZoneInfo
+  Endif
+  ACCLCDDispLine1 = "================"
+  If TS Mod 2 = 0 then
+    ACCLCDDispLine2 = "Overriding  ZN" ; right(left(Override Name, 4), 2)
+  Else
+    ACCLCDDispLine2 = ""
+  Endif
+  ACCLCDDispLine3 = "================"
+  ACCLCDDispLine4 = ""
+
+IdleState:
+  If TS = 0 then
+    NumBuilder = 0
+    ACCLCDBacklight = Off
+    ACCLCDKeyStroke = 0
+'stop DISP_NV.lp
+  Else
+    If ACCLCDBacklight <> Off then
+'start DISP_NV.lp
+      If (ACCLCDKeyStroke > 0) and (ACCLCDKeyStroke <= 10) then Goto ManualZoneEntry
+      Goto MenuScroll
+    Endif
+  Endif
+  ACCLCDDispLine1 = "   Press any"
+  ACCLCDDispLine2 = "button to enable"
+  ACCLCDDispLine3 = " override menu."
+  ACCLCDDispLine4 = ""
+
+ManualZoneEntry:
+  If ACCLCDBacklight = Off then Goto IdleState
+  If ACCLCDKeyStroke <> 0 then
+    If ACCLCDKeyStroke is between 13 and 14 then
+      NumBuilder = 0
+      Goto MenuScroll
+    Endif
+    LastPress = Date
+    If (ACCLCDKeyStroke <= NumZones) and (ACCLCDKeyStroke <= 10) and (NumZones <= 10) then
+      CurrentIndex = ACCLCDKeyStroke
+      Turn On MenuScrolling
+      Override = ZN_OVR[CurrentIndex] 'Set reference object
+      Goto ZoneInfo
+    Else 'Multi-digit number
+      If ACCLCDKeyStroke <= 10 then
+        If NumBuilder > 9 then NumBuilder = 0 'No three digit zone numbers.
+        If ACCLCDKeyStroke = 10 then NumBuilder = NumBuilder * 10 Else NumBuilder = NumBuilder * 10 + ACCLCDKeyStroke
+        ACCLCDKeyStroke = 0
+      Endif
+      If ACCLCDKeyStroke = 12 then NumBuilder = (NumBuilder - NumBuilder Mod 10) / 10
+      ACCLCDDispLine1 = "Type zone number"
+      ACCLCDDispLine2 = "then press enter"
+      ACCLCDDispLine3 = "Zone: " ; NumBuilder
+      ACCLCDDispLine4 = ""
+      If ACCLCDKeyStroke = 15 then 'Cancel pressed
+        ACCLCDKeyStroke = 0
+        NumBuilder = 0
+        Turn On MenuScrolling
+        Goto MenuScroll
+      Endif
+      If ACCLCDKeyStroke = 16 then 'Enter pressed
+        If (NumBuilder is between 1 and NumZones) then 'legal zone entered
+          ACCLCDKeyStroke = 0
+          CurrentIndex = NumBuilder
+          NumBuilder = 0
+          Turn On MenuScrolling
+          Override = ZN_OVR[CurrentIndex] 'Set reference object
+          Goto ZoneInfo
+        Else
+          ACCLCDDispLine1 = "Invalid zone num"
+          ACCLCDDispLine2 = "Please try again"
+          ACCLCDDispLine3 = ""
+          ACCLCDDispLine4 = ""
+          NumBuilder = 0
+        Endif
+      Endif
+      ACCLCDKeyStroke = 0
+    Endif
+  Endif
+  If Date > LastPress + 3 then
+    LastPress = Date
+    If (NumBuilder is between 1 and NumZones) then 'legal zone entered
+      ACCLCDKeyStroke = 0
+      CurrentIndex = NumBuilder
+      NumBuilder = 0
+      Turn On MenuScrolling
+      Override = ZN_OVR[CurrentIndex] 'Set reference object
+      Goto ZoneInfo
+    Else
+      NumBuilder = 0
+      ACCLCDDispLine1 = "Type zone number"
+      ACCLCDDispLine2 = "then press enter"
+      ACCLCDDispLine3 = "Zone: " ; NumBuilder
+      ACCLCDDispLine4 = "(use 1 thru " ; NumZones ; ")"
+    Endif
+  Endif
+
+E:
+  If ErrRecover < 4 then Goto ProcessTemps
+  If ErrRecover < 7 then Goto ProcessEffOcc
+  ACCLCDDispLine1 = ""
+  ACCLCDDispLine2 = " Error detected;"
+  ACCLCDDispLine3 = "   restarting..."
+  ACCLCDDispLine4 = ""
+  If TS > 3 then Goto Initialize 'A point could have been renamed or deleted; refresh the list.
