@@ -1,0 +1,24 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Zone Setpoint Calculation
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Numeric HeatBandHigh, CoolBandLow, DiffLowLim
+Numeric SPC_TEMP, SPH_TEMP
+
+SetpointCalc:
+  HeatBandHigh = ZN##_SPH + ZN##VD_HB / 2 'High end of heating band
+  CoolBandLow = ZN##_SPC - ZN##VD_CB / 2 'Low end of cooling band
+
+  ZN##D_SP = (CoolBandLow + HeatBandHigh) / 2
+  ZN##D_HCB = maximum(0, minimum(ZN##D_HCB, CoolBandLow - HeatBandHigh))
+
+  DiffLowLim = ZN##D_HCB + ZN##VD_CB / 2 + ZN##VD_HB / 2
+
+  SP_CALC.fct(ZN##_ADJ, ZN##_SPC_B, ZN##_SPH_B, ZN##_SPC_L, ZN##_SPH_H, DiffLowLim, ZN##_SPC, ZN##_SPH, 0, SPC_TEMP, SPH_TEMP)
+
+E:
+  If TS > 10 then Goto SetpointCalc
