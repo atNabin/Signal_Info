@@ -1,0 +1,48 @@
+'****************************************
+'Author:  
+'Date:   
+'Description:  Occupancy Determination Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+Datetime OvrStartTime
+
+Occupied:
+  If (not NV_TS_HOL and TS#1_HOL_OP) then Goto HolidayUnoc
+  If TSCH#1 then
+    EFF_OCC = 1
+    EFF_OCC.str = "Occupied"
+  Else
+    Goto Unoccupied
+  Endif
+
+Unoccupied:
+  If (not NV_TS_HOL and TS#1_HOL_OP) then Goto HolidayUnoc
+  If not TSCH#1 then
+    EFF_OCC = 2
+    EFF_OCC.str = "Unoccupied"
+  Else
+    Goto Occupied
+  Endif
+  If R_OVR then
+    OvrStartTime = Date
+    Goto Bypass
+  Endif
+
+Bypass:
+  EFF_OCC = 3
+  EFF_OCC.str = "Bypass"
+  If Date > OvrStartTime + OVR_TMH * 3600 then goto Unoccupied
+  If TSCH#1 then Goto Occupied
+
+HolidayUnoc:
+  If (NV_TS_HOL or not TS#1_HOL_OP) then Basedon EFF_OCC Goto Occupied, Unoccupied
+  EFF_OCC = 2
+  EFF_OCC.str = "Holiday"
+  If R_OVR then
+    OvrStartTime = Date
+    Goto Bypass
+  Endif
+
+E:
+  If TS > 10 then Goto Occupied
