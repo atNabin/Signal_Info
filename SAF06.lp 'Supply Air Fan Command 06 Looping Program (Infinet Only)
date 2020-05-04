@@ -1,0 +1,61 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Fan Command Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Datetime OnTime, OffTime
+
+Initialize:
+  OnTime = Date
+  OffTime = Date
+  Goto FanOn
+
+FanOn:
+  If EFF_OCC <> 2 or SUSB_M <> 1 then
+    Turn On SAF_CMD
+    OffTime = Date
+  Else
+    If Date > OffTime + SAF_OF then Turn Off SAF_CMD
+  Endif
+  If SAF_CMD then SAF_CMD.str = "Start" Else SAF_CMD.str = "Stop"
+  SAF_CYC_OP.str = "Continuous"
+  Basedon SAF_CYC_OP Goto FanOn, CoolCycle, HeatCycle, Cycle
+
+CoolCycle:
+  If C_CL or ((EFF_OCC <> 2 or SUSB_M = 2) and not HC_M) then
+    Turn On SAF_CMD
+    OffTime = Date
+  Else
+    If Date > OffTime + SAF_OF then Turn Off SAF_CMD
+  Endif
+  If SAF_CMD then SAF_CMD.str = "Start" Else SAF_CMD.str = "Stop"
+  SAF_CYC_OP.str = "Cool Cycle"
+  Basedon SAF_CYC_OP Goto FanOn, CoolCycle, HeatCycle, Cycle
+
+HeatCycle:
+  If H_CL or ((EFF_OCC <> 2 or SUSB_M = 3) and HC_M) then
+    Turn On SAF_CMD
+    OffTime = Date
+  Else
+    If Date > OffTime + SAF_OF then Turn Off SAF_CMD
+  Endif
+  If SAF_CMD then SAF_CMD.str = "Start" Else SAF_CMD.str = "Stop"
+  SAF_CYC_OP.str = "Heat Cycle"
+  Basedon SAF_CYC_OP Goto FanOn, CoolCycle, HeatCycle, Cycle
+
+Cycle:
+  If C_CL or H_CL then
+    Turn On SAF_CMD
+    OffTime = Date
+  Else
+    If Date > OffTime + SAF_OF then Turn Off SAF_CMD
+  Endif
+  If SAF_CMD then SAF_CMD.str = "Start" Else SAF_CMD.str = "Stop"
+  SAF_CYC_OP.str = "Heat/Cool Cycle"
+  Basedon SAF_CYC_OP Goto FanOn, CoolCycle, HeatCycle, Cycle
+
+E:
+  If TS > 10 then goto Initialize
