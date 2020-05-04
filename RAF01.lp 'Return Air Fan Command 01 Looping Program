@@ -1,0 +1,21 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Fan Command Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Initialize:
+  Goto FanOff
+
+FanOn:
+  If SAF_RI then Turn On RAF_CMD Else Goto FanOff
+  If RAF_CMD then RAF_CMD.str = "Start" Else RAF_CMD.str = "Stop"
+
+FanOff:
+  If not SAF_RI then Turn Off RAF_CMD Else Goto FanOn
+  If RAF_CMD then RAF_CMD.str = "Start" Else RAF_CMD.str = "Stop"
+
+E:
+  If TS > 10 then goto Initialize
