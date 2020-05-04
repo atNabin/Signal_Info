@@ -1,0 +1,53 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  Effective Occupancy Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Datetime OvrEndTime
+
+Occupied:
+  If TSCH is On then
+    EFF_OCC = 1
+    EFF_OCC.str = "Occupied"
+  Else
+    EFF_OCC = 2
+    EFF_OCC.str = "Unoccupied"
+  Endif
+  Basedon EFF_OCC Goto Occupied, Unoccupied, Bypass
+
+Unoccupied:
+  If TSCH is Off then
+    If R_OVR then
+      EFF_OCC = 3
+      EFF_OCC.str = "Bypass"
+      OvrEndTime = Date + OVR_TMH * 3600
+    Else
+      EFF_OCC = 2
+      EFF_OCC.str = "Unoccupied"
+    Endif
+  Else
+    EFF_OCC = 1
+    EFF_OCC.str = "Occupied"
+  Endif
+  Basedon EFF_OCC Goto Occupied, Unoccupied, Bypass
+
+Bypass:
+  If TSCH is On then
+    EFF_OCC = 1
+    EFF_OCC.str = "Occupied"
+  Else
+    If Date > OvrEndTime then
+      EFF_OCC = 2
+      EFF_OCC.str = "Unoccupied"
+    Else
+      EFF_OCC = 3
+      EFF_OCC.str = "Bypass"
+    Endif
+  Endif
+  Basedon EFF_OCC Goto Occupied, Unoccupied, Bypass
+
+E:
+  If TS > 10 then goto Occupied
