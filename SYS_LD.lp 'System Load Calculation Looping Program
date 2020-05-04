@@ -1,0 +1,39 @@
+'****************************************
+'Author:  
+'Date:  
+'Description:  System Load Program
+'Flow Type:  Looping
+'Triggers:  N/A
+'****************************************
+
+Numeric CH#1_TD, CH#2_TD 'Differential Temperatures
+Numeric DesignFlow1, DesignTons1, DesignPD1 'Chiller 1 Design Parameters
+Numeric DesignFlow2, DesignTons2, DesignPD2 'Chiller 2 Design Parameters
+
+Initialization:
+  DesignFlow1 = 570
+  DesignTons1 = 200
+  DesignPD1 = 8
+  DesignFlow2 = 570
+  DesignTons2 = 200
+  DesignPD2 = 8
+  Goto LoadCalculations
+
+LoadCalculations:
+'Chiller Differential Temperatures
+  CH#1_TD = (CH#1_EN) * (CH#1R_T - CH#1S_T)
+  CH#2_TD = (CH#2_EN) * (CH#2R_T - CH#2S_T)
+
+'Chiller Flows
+  CH#1_GPM = (CHWP#1_RI) * DesignFlow1 * sqrt(CH#1_PD / DesignPD1)
+  CH#2_GPM = (CHWP#2_RI) * DesignFlow2 * sqrt(CH#2_PD / DesignPD2)
+
+'Chiller Tonnages
+  CH#1_TON = CH#1_TD * CH#1_GPM / 24
+  CH#2_TON = CH#2_TD * CH#2_GPM / 24
+
+'System Load
+  SYS_LOAD = CH#1_RI * CH#1_TON / DesignTons1 + CH#2_RI * CH#2_TON / DesignTons2
+
+E:
+  If TS > 10 then goto Initialization
