@@ -5,7 +5,6 @@ Numeric Output SAF_SPD
 Numeric Output SAF_FBK_HZ
 Numeric Output SAF_F_OFF
 Numeric Output SAF_F_ON
-Numeric   FailStamp
 '****************************************
 'Author:  Nabin Maharjan
 'Date:  
@@ -13,9 +12,10 @@ Numeric   FailStamp
 'Flow Type:  Looping
 'Triggers:  N/A
 '**************************************** 
-Datetime LastTime 'last time PID was calculated
+Datetime LastTime 'last time fail was calculated
+Datetime FailStamp
 
-Initialize: 'initialize PID parameters
+Initialize: 'initialize parameters
   LastTime = Date
   FailStamp = Date
   Goto FanFbk
@@ -33,9 +33,9 @@ FanFbk:
     Turn Off SAF_F_OFF
   Endif
   
-    If not SAF_CMD and SAF_RI then
+  If not SAF_CMD and SAF_RI then
     If Date > FailStamp + 180 then
-    Turn On SAF_F_ON
+      Turn On SAF_F_ON
     Endif
   Else
     FailStamp = Date
