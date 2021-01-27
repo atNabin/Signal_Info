@@ -1,0 +1,45 @@
+'Description: Supply Air Temp Heating Load Program
+'Flow Type: Looping
+'Triggers: none
+'This program calculates a heating load (0-100) for the unit using a PI loop
+'0 = no heating required, 100 = max heating required
+'Version 1.0
+
+Numeric Input SaTmp, SaTmpHspt, HtgClgMd, SaFanSts, fbkHtgLoad
+Numeric Output HtgLoad
+Function FctPI
+Numeric LastError, ControlInt, DeadZone
+Numeric SaTmpHtgLoadGn, SaTmpHtgLoadIt, SaTmpHtgLoadSt
+Datetime LastTime 'last time PID was calculated
+
+Initialize: 'initialize PID parameters
+ LastError = 0
+ LastTime = Date
+ SaTmpHtgLoadGn = .04
+ SaTmpHtgLoadIt = 3
+ SaTmpHtgLoadSt = 180
+
+ '***** Adjust these values to tune the loop: *****
+ ControlInt = 6 'Control Interval (seconds) - Default = 60
+ DeadZone = 1 'Dead Zone (degrees) - Default = 1.0
+ '*************************************************
+
+ If SaFanSts and not HtgClgMd then goto PID_On 'Modulate
+ Goto PID_Min 'Close Valve
+
+PID_On: 'allow PID to modulate
+ If HtgClgMd or not SaFanSts then goto PID_Min
+
+ If Date >= (LastTime + ControlInt) then
+  HtgLoad = FctPI(SaTmp, SaTmpHspt, SaTmpHtgLoadGn, SaTmpHtgLoadIt, SaTmpHtgLoadSt, DeadZone, 0, LastError, LastTime, HtgLoad, fbkHtgLoad)
+ Endif
+
+PID_Min: 'send PID to minimum position
+ If SaFanSts and not HtgClgMd then goto PID_On 'Modulate
+
+ HtgLoad = 0
+ LastError = 0
+ LastTime = Date
+
+E:
+ If TS > 30 then goto Initialize
