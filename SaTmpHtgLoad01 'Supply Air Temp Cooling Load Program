@@ -1,0 +1,44 @@
+'Description: Supply Air Temp Cooling Load Program
+'Flow Type: Looping
+'Triggers: none
+'This program calculates a cooling load (0-100) for the unit using a PI loop
+'0 = no cooling required, 100 = max cooling required
+'Version 1.0
+
+Numeric Input SaTmp, SaTmpCspt, HtgClgMd, SaFanSts, fbkClgLoad
+Numeric Output ClgLoad
+Function FctPI
+Numeric LastError, ControlInt, DeadZone, SaTmpClgLoadGn, SaTmpClgLoadIt, SaTmpClgLoadSt
+Datetime LastTime 'last time PID was calculated
+
+Initialize: 'initialize PID parameters
+ LastError = 0
+ LastTime = Date
+ SaTmpClgLoadGn = .04
+ SaTmpClgLoadIt = 3
+ SaTmpClgLoadSt = 180
+
+ '***** Adjust these values to tune the loop: *****
+ ControlInt = 6 'Control Interval - Default = 3
+ DeadZone = 1 'Dead Zone - Default = 1.0
+ '*************************************************
+
+ If SaFanSts and HtgClgMd then goto PID_On 'Modulate
+ Goto PID_Min 'Close Valve
+
+PID_On: 'allow PID to modulate
+ If not HtgClgMd or not SaFanSts then goto PID_Min
+
+ If Date >= (LastTime + ControlInt) then
+  ClgLoad = FctPI(SaTmp, SaTmpCspt, SaTmpClgLoadGn, SaTmpClgLoadIt, SaTmpClgLoadSt, DeadZone, 1, LastError, LastTime, ClgLoad, fbkClgLoad)
+ Endif
+
+PID_Min: 'send PID to minimum position
+ If SaFanSts and HtgClgMd then goto PID_On 'Modulate
+
+ ClgLoad = 0
+ LastError = 0
+ LastTime = Date
+
+E:
+ If TS > 30 then goto Initialize
