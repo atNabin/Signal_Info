@@ -1,0 +1,38 @@
+'Description: Cooling Load Program
+'Flow Type: Looping
+'Triggers: none
+'This program calculates Dehumidification Load for the unit using a PI loop
+'Version 1.0
+
+Numeric Input fbkHtgLoad, RmTmpHspt, RmTmp, SaFanSts, UnitEna, HtgLoadGn, HtgLoadIt, HtgLoadSt, HtgClgMd
+Numeric Output HtgLoad
+Function FctPI
+Numeric LastError, ControlInt, DeadZone
+Datetime LastTime 'last time PID was calculated
+
+Initialize: 'initialize PID parameters
+ LastError = 0
+ LastTime = Date
+
+ '***** Adjust these values to tune the loop: *****
+ ControlInt = 3 'Control Interval - Default = 3
+ DeadZone = 1 'Dead Zone - Default = 1.0
+ '*************************************************
+
+ If UnitEna and SaFanSts and not HtgClgMd then goto PID_On 'Modulate
+ Goto PID_Min 'Set Load to min
+
+PID_On: 'allow PID to modulate
+ If not (UnitEna and SaFanSts and not HtgClgMd) then goto PID_Min
+ If Date >= (LastTime + ControlInt) then
+  HtgLoad = FctPI(RmTmp, RmTmpHspt, HtgLoadGn, HtgLoadIt, HtgLoadSt, DeadZone, 0, LastError, LastTime, HtgLoad, fbkHtgLoad)
+ Endif
+
+PID_Min: 'send PID to minimum position
+	If UnitEna and SaFanSts and not HtgClgMd then goto PID_On 'Modulate
+	HtgLoad = 0
+	LastError = 0
+	LastTime = Date
+
+E:
+ If TS > 30 then goto Initialize
