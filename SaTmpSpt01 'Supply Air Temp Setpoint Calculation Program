@@ -1,0 +1,105 @@
+'Description: Supply Air Temp Setpoint Calculation Program
+'Flow Type: Looping
+'Triggers: none
+'This program calculates a supply air temperature setpoint using a floating control / bump algorithm
+'Adjustments are made based on the difference between the room temperature and the active room setpoint
+'Version 1.0
+'Note: This version is not for use in conjunction with fan cycling - it restarts the process each time the fan starts
+
+Numeric Input RmTmp, RmTmpSpt, HtgClgMd, SaFanSts
+Numeric Output SaTmpCspt, SaTmpHspt, SaTmpSpt
+
+Numeric Input SaTmpCsptCi, SaTmpHsptCi 'Control interval: bump evaluation frequency 
+Numeric Input SaTmpCsptHiBmp, SaTmpHsptHiBmp 'High bump amount: maximum allowable bump
+Numeric Input SaTmpCsptLoBmp, SaTmpHsptLoBmp 'Low bump amount: minimum allowable bump
+Numeric Input SaTmpCsptHiErr, SaTmpHsptHiErr 'High error: setpoint deviation needed for max bump
+Numeric Input SaTmpCsptLoErr, SaTmpHsptLoErr 'Low error: setpoint deviation needed for min bump
+Numeric Input SaTmpCsptLlmt 'Cooling setpoint low limit
+Numeric Input SaTmpHsptHlmt 'Heating setpoint high limit
+Numeric Input SaTmpBmpDmpFact 'Derivative based bump compensation. Default = 100% (0=disable)
+
+Function FctLinearFit
+
+DateTime LastEvaluation
+Numeric LastTemp, Bp, Bd
+
+Initialize:
+LastTemp = RmTmp
+LastEvaluation = Date
+If SaFanSts then 
+  If HtgClgMd then Goto WaitForClgBump Else Goto WaitForHtgBump
+Else
+ Goto BumpInactive
+Endif
+
+WaitForClgBump:
+If not SaFanSts then Goto BumpInactive
+If not HtgClgMd then Goto InitSetpoint 'Switched operating mode
+If TS >= SaTmpCsptCi then Goto CoolingBump
+
+WaitForHtgBump:
+If not SaFanSts then goto BumpInactive
+If HtgClgMd then Goto InitSetpoint 'Switched operating mode
+If TS >= SaTmpHsptCi then Goto HeatingBump
+
+CoolingBump:
+If RmTmp > RmTmpSpt then
+ If (RmTmp-RmTmpSpt) >= SaTmpCsptLoErr then 'Within bump range above setpoint
+  Bp = -1 * FctLinearFit(RmTmp-RmTmpSpt, SaTmpCsptLoErr, SaTmpCsptHiErr, SaTmpCsptLoBmp, SaTmpCsptHiBmp)
+  Bd = minimum(maximum(0, SaTmpBmpDmpFact/10 * (LastTemp - RmTmp) / (Date - LastEvaluation)), -Bp) 'derivative can soften Bp to prevent overshoot
+ Else
+  Bp = 0
+ Endif
+Else 'Room Temp <= Room Setpoint
+ If (RmTmpSpt-RmTmp) >= SaTmpCsptLoErr then 'Within bump range below setpoint
+  Bp = FctLinearFit(RmTmpSpt-RmTmp, SaTmpCsptLoErr, SaTmpCsptHiErr, SaTmpCsptLoBmp, SaTmpCsptHiBmp)
+  Bd = maximum(minimum(0, SaTmpBmpDmpFact/10 * (LastTemp - RmTmp) / (Date - LastEvaluation)), -Bp) 'derivative can soften Bp to prevent overshoot
+ Else 
+  Bp = 0
+ Endif
+Endif
+LastTemp = RmTmp
+LastEvaluation = Date
+SaTmpCspt = minimum(maximum(SaTmpCspt + Bp + Bd, SaTmpCsptLlmt), RmTmpSpt) 'May want to change last term to RmTmpSpt +3 to avoid driving into heating
+SaTmpSpt = SaTmpCspt
+Goto WaitForClgBump
+
+HeatingBump:
+If RmTmp > RmTmpSpt then
+ If (RmTmp-RmTmpSpt) >= SaTmpHsptLoErr then 'Within bump range above setpoint
+  Bp = -1 * FctLinearFit(RmTmp-RmTmpSpt, SaTmpHsptLoErr, SaTmpHsptHiErr, SaTmpHsptLoBmp, SaTmpHsptHiBmp)
+  Bd = minimum(maximum(0, SaTmpBmpDmpFact/10 * (LastTemp - RmTmp) / (Date - LastEvaluation)), -Bp) 'derivative can soften Bp to prevent overshoot 
+ Else
+  Bp = 0
+ Endif
+Else 'Room Temp <= Room Setpoint
+ If (RmTmpSpt-RmTmp) >= SaTmpHsptLoErr then 'Within bump range below setpoint
+  Bp = FctLinearFit(RmTmpSpt-RmTmp, SaTmpHsptLoErr, SaTmpHsptHiErr, SaTmpHsptLoBmp, SaTmpHsptHiBmp)
+  Bd = maximum(minimum(0, SaTmpBmpDmpFact/10 * (LastTemp - RmTmp) / (Date - LastEvaluation)), -Bp) 'derivative can soften Bp to prevent overshoot 
+ Else
+  Bp = 0
+ Endif
+Endif
+LastTemp = RmTmp
+LastEvaluation = Date
+SaTmpHspt = maximum(minimum(SaTmpHspt + Bp + Bd, SaTmpHsptHlmt), RmTmpSpt) 'May want to change last term to RmTmpSpt -5 to avoid driving into cooling
+SaTmpSpt = SaTmpHspt
+Goto WaitForHtgBump
+
+BumpInactive:
+LastTemp = RmTmp
+LastEvaluation = Date
+If SaFanSts then Goto InitSetpoint
+
+InitSetpoint: 'Determine appropriate starting value for SaTmpSpt
+If HtgClgMd Then
+ SaTmpCspt = FctLinearFit(RmTmp - RmTmpSpt, 0, 20, RmTmpSpt, SaTmpCsptLlmt) 'Can adjust if needed
+ SaTmpSpt = SaTmpCspt
+Else
+ SaTmpHspt = FctLinearFit(RmTmp - RmTmpSpt, -20, 0, SaTmpHsptHlmt, RmTmpSpt) 'Can adjust if needed
+ SaTmpSpt = SaTmpHspt
+Endif
+If HtgClgMd then Goto WaitForClgBump Else Goto WaitForHtgBump
+
+E:
+ If TS > 30 Then Goto Initialize
